@@ -7,10 +7,12 @@
 
 #include "koopa.h"
 #include "tools.h"
+#include "Visit.h"
 
 extern FILE *yyin;
 extern int yyparse(unique_ptr<BaseAST> &ast);
 extern KoopaString ks;
+extern RiscvString rvs;
 
 using namespace std;
 
@@ -48,12 +50,40 @@ int main(int argc, const char *argv[]) {
     //     fhaha << tmp + "\n";
     // }
     // fhaha.close();ihaha.close();
+    koopa_program_t program;
+    koopa_error_code_t err_c = koopa_parse_from_string(str, &program);
+    assert(err_c == KOOPA_EC_SUCCESS); // 确保解析时没有出错
+    // 创建一个 raw program builder, 用来构建 raw program
+    koopa_raw_program_builder_t builder = koopa_new_raw_program_builder();
+    // 将 Koopa IR 程序转换为 raw program
+    koopa_raw_program_t raw = koopa_build_raw_program(builder, program);
+    // 释放 Koopa IR 程序占用的内存
+    koopa_delete_program(program);
+    // 处理 raw program
+    // TODO: Implement Code here:
+    Visit(raw);
 
     ofstream ofs(output);
-    ofstream fout2("./myout.txt",ios::app);
+    
+    if (std::string(mode)=="-koopa"){
+      ofs<< str;
+
+    }else if(std::string(mode)=="-riscv"){
+      ofs<< rvs.Get_result();
+
+    }
+    
+    ofs.close();
+    // 处理完成, 释放 raw program builder 占用的内存
+    // 注意, raw program 中所有的指针指向的内存均为 raw program builder 的内存
+    // 所以不要在 raw program 处理完毕之前释放 builder
+    koopa_delete_raw_program_builder(builder);
+    
+    ofstream fout2("./myout_ir.txt",ios::app);
     fout2 << str<<endl; 
     fout2.close();
-    ofs << str;
-    ofs.close();
+    ofstream fout3("./myout_riscv.txt",ios::app);
+    fout2 << rvs.Get_result()<<endl; 
+    fout2.close();
     return 0;
 }
