@@ -1,0 +1,238 @@
+fun @main(): i32 {
+%entry:
+  ret 0
+}
+
+fun @main(): i32 {
+%entry:
+  ret 0
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 3
+}
+
+fun @main(): i32 {
+%entry:
+  ret 3
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 2077
+}
+
+fun @main(): i32 {
+%entry:
+  ret 2077
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 668
+}
+
+fun @main(): i32 {
+%entry:
+  ret 668
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1261483
+}
+
+fun @main(): i32 {
+%entry:
+  ret 1261483
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1
+}
+
+fun @main(): i32 {
+%entry:
+  ret 1
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 6
+}
+
+fun @main(): i32 {
+%entry:
+  ret 6
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 0
+}
+
+fun @main(): i32 {
+%entry:
+  ret 0
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 3
+}
+
+fun @main(): i32 {
+%entry:
+  ret 3
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 2077
+}
+
+fun @main(): i32 {
+%entry:
+  ret 2077
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 668
+}
+
+fun @main(): i32 {
+%entry:
+  ret 668
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1261483
+}
+
+fun @main(): i32 {
+%entry:
+  ret 1261483
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1
+}
+
+fun @main(): i32 {
+%entry:
+  ret 1
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 6
+}
+
+fun @main(): i32 {
+%entry:
+  ret 6
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 0
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 3
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 2077
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 668
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1261483
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 6
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 0
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 3
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 2077
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 668
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1261483
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 1
+}
+
+
+fun @main(): i32 {
+%entry:
+  ret 6
+}
+
+

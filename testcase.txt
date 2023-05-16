@@ -1,0 +1,49 @@
+filename: /opt/bin/testcases/lv1/0_main.c
+int main() {
+  return 0;
+}
+filename: /opt/bin/testcases/lv1/1_comments.c
+/* This is a comment. */
+
+int main() {
+  // This is also a comment.
+  return 3;
+}
+filename: /opt/bin/testcases/lv1/2_int_dec.c
+int main() {
+  return 2077;
+}
+filename: /opt/bin/testcases/lv1/3_int_oct.c
+int main() {
+  return 01234;
+}
+filename: /opt/bin/testcases/lv1/4_int_hex.c
+int main() {
+  return 0x133fAb;
+}
+filename: /opt/bin/testcases/lv1/5_compact.c
+int main(){return 1;}
+filename: /opt/bin/testcases/lv1/6_whitespaces.c
+
+
+int
+		
+
+            main()    
+{                  return
+
+	
+
+
+
+
+        
+
+6
+
+
+;
+
+}
+					
+  
