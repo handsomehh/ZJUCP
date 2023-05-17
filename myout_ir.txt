@@ -94,3 +94,9 @@ fun @main(): i32 {
 }
 
 
+fun @main(): i32 {
+%entry:
+  ret 0
+}
+
+

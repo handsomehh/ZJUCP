@@ -1,49 +1,112 @@
-filename: /opt/bin/testcases/lv1/0_main.c
+filename: /opt/bin/testcases/lv3/00_pos.c
 int main() {
-  return 0;
+  return +2;
 }
-filename: /opt/bin/testcases/lv1/1_comments.c
-/* This is a comment. */
-
+filename: /opt/bin/testcases/lv3/01_neg_0.c
 int main() {
-  // This is also a comment.
-  return 3;
+  return -0;
 }
-filename: /opt/bin/testcases/lv1/2_int_dec.c
+filename: /opt/bin/testcases/lv3/02_neg_2.c
 int main() {
-  return 2077;
+  return -2;
 }
-filename: /opt/bin/testcases/lv1/3_int_oct.c
+filename: /opt/bin/testcases/lv3/03_neg_max.c
 int main() {
-  return 01234;
+  return -2147483647;
 }
-filename: /opt/bin/testcases/lv1/4_int_hex.c
+filename: /opt/bin/testcases/lv3/04_not_0.c
 int main() {
-  return 0x133fAb;
+  return !0;
 }
-filename: /opt/bin/testcases/lv1/5_compact.c
-int main(){return 1;}
-filename: /opt/bin/testcases/lv1/6_whitespaces.c
-
-
-int
-		
-
-            main()    
-{                  return
-
-	
-
-
-
-
-        
-
-6
-
-
-;
-
+filename: /opt/bin/testcases/lv3/05_not_10.c
+int main() {
+  return !10;
 }
-					
-  
+filename: /opt/bin/testcases/lv3/06_complex_unary.c
+int main() {
+  return +-+!(!-10000);
+}
+filename: /opt/bin/testcases/lv3/07_add.c
+int main() {
+  return 1 + 2;
+}
+filename: /opt/bin/testcases/lv3/08_add_neg.c
+int main() {
+  return 1 + -2;
+}
+filename: /opt/bin/testcases/lv3/09_sub.c
+int main() {
+  return 1 - 2;
+}
+filename: /opt/bin/testcases/lv3/10_sub_neg.c
+int main() {
+  return 1 - -2;
+}
+filename: /opt/bin/testcases/lv3/11_mul.c
+int main() {
+  return 2 * 4;
+}
+filename: /opt/bin/testcases/lv3/12_mul_neg.c
+int main() {
+  return 2 * -4;
+}
+filename: /opt/bin/testcases/lv3/13_div.c
+int main() {
+  return 10 / 2;
+}
+filename: /opt/bin/testcases/lv3/14_div_neg.c
+int main() {
+  return 10 / -3;
+}
+filename: /opt/bin/testcases/lv3/15_mod.c
+int main() {
+  return 7 % 4;
+}
+filename: /opt/bin/testcases/lv3/16_mod_neg.c
+int main() {
+  return 7 % -4;
+}
+filename: /opt/bin/testcases/lv3/17_lt.c
+int main() {
+  return 1 < 2;
+}
+filename: /opt/bin/testcases/lv3/18_gt.c
+int main() {
+  return 9 > 10;
+}
+filename: /opt/bin/testcases/lv3/19_le.c
+int main() {
+  return 9 <= 3;
+}
+filename: /opt/bin/testcases/lv3/20_ge.c
+int main() {
+  return 10 >= 7;
+}
+filename: /opt/bin/testcases/lv3/21_eq.c
+int main() {
+  return 1 == 2;
+}
+filename: /opt/bin/testcases/lv3/22_ne.c
+int main() {
+  return 1 != 0;
+}
+filename: /opt/bin/testcases/lv3/23_lor.c
+int main() {
+  return 11 || 0;
+}
+filename: /opt/bin/testcases/lv3/24_land.c
+int main() {
+  return 2 && 4;
+}
+filename: /opt/bin/testcases/lv3/25_int_min.c
+int main() {
+  return -2147483647 - 1;
+}
+filename: /opt/bin/testcases/lv3/26_parentheses.c
+int main() {
+  return 1 + 2 * (3 + 4);
+}
+filename: /opt/bin/testcases/lv3/27_complex_binary.c
+int main() {
+  return 1 + 2 * (!3 || 4) < 5 != 6 && -7;
+}

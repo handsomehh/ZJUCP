@@ -29,7 +29,16 @@ int main(int argc, const char *argv[]) {
     // 输出文件
     // ofstream fout(output);
   // // 获取测试用例
-    
+    // ifstream ihaha(input);
+    // ofstream fhaha("./testcase.txt", ios::app);
+    // string tmp;
+    // fhaha <<"filename: " << input << endl;
+    // while(getline(ihaha, tmp)){
+    //     fhaha << tmp + "\n";
+    // }
+    // fhaha.close();ihaha.close();
+    // return 0;
+
 
     unique_ptr<BaseAST> base_ast;
     unique_ptr<CompUnitAST> ast;
@@ -42,14 +51,15 @@ int main(int argc, const char *argv[]) {
     
     const char *str = ks.c_str();
     
-    // ifstream ihaha(input);
-    // ofstream fhaha("./testcase.txt", ios::app);
-    // string tmp;
-    // fhaha <<"filename: " << input << endl;
-    // while(getline(ihaha, tmp)){
-    //     fhaha << tmp + "\n";
-    // }
-    // fhaha.close();ihaha.close();
+    ofstream ofs(output);
+    
+    if (std::string(mode)=="-koopa"){
+      ofs<< str;
+      ofs.close();
+      return 0;
+    }
+   
+    
     koopa_program_t program;
     koopa_error_code_t err_c = koopa_parse_from_string(str, &program);
     assert(err_c == KOOPA_EC_SUCCESS); // 确保解析时没有出错
@@ -63,12 +73,8 @@ int main(int argc, const char *argv[]) {
     // TODO: Implement Code here:
     Visit(raw);
 
-    ofstream ofs(output);
     
-    if (std::string(mode)=="-koopa"){
-      ofs<< str;
-
-    }else if(std::string(mode)=="-riscv"){
+    if(std::string(mode)=="-riscv"){
       ofs<< rvs.Get_result();
 
     }

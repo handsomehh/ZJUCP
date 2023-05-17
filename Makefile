@@ -18,7 +18,7 @@ BFLAGS := -d
 LDFLAGS :=
 
 # Debug flags
-DEBUG ?= 1
+DEBUG := 1
 ifeq ($(DEBUG), 0)
 CFLAGS += -O2
 CXXFLAGS += -O2
