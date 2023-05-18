@@ -8,11 +8,15 @@
 class KoopaString{
 private:
     std::string koopa_str;
+    
 public:
+    std::string alloc32i = " = alloc i32\n";
     void append(const std::string &s){
         koopa_str += s;
     }
-    
+    void appendaddtab(const std::string &s){
+        koopa_str+= "  "+s;
+    }
     void label(const std::string &s){
         koopa_str += s + ":\n";
     }

@@ -44,10 +44,10 @@ using namespace std;
 // lexer 返回的所有 token 种类的声明
 // 注意 IDENT 和 INT_CONST 会返回 token 的值, 分别对应 str_val 和 int_val
 
-%token INT RETURN EQ NE LEQ BGE AND OR 
+%token INT RETURN EQ NE LEQ BGE AND OR CONST
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
-%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp
+%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom
 %type <int_val> Number
 %type <char_val> UnaryOp MULOp AddOp
 %%
@@ -84,7 +84,130 @@ CompUnit
     ast = move(comp_unit);
   }
   ;
+Decl 
+  : ConstDecl {
 
+    auto ast = new DeclAST();
+    ast->tag = DeclAST::CONST;
+    ast->const_decl = unique_ptr<ConstDeclAST>((ConstDeclAST *)$1);
+    $$ = ast;
+
+  } | VarDecl {
+
+    auto ast = new DeclAST();
+    ast->tag = DeclAST::VAR;
+    ast->var_decl = unique_ptr<VarDeclAST>((VarDeclAST *)$1);
+    $$ = ast;
+
+  }
+  ;
+
+ConstDecl
+  : CONST BType ConstDef ';'{
+    auto ast = (ConstDeclAST *)$3;
+    ast->btype = unique_ptr<BTypeAST>((BTypeAST *)$2);
+    $$ = ast;
+  }
+  ;
+BType
+  : INT {
+    auto ast = new BTypeAST();
+    ast->tag = BTypeAST::INT;
+    // std::cout<<"4";
+    $$ = ast;
+  }
+  ;
+ConstDef
+  : ConstDefAtom ',' ConstDef{
+
+      auto ast = new ConstDeclAST();
+      auto rec = unique_ptr<ConstDeclAST>((ConstDeclAST*)$3);
+
+      ast->const_defs.push_back(unique_ptr<ConstDefAST>((ConstDefAST*)$1));
+      for (auto &i : rec->const_defs){
+        ast->const_defs.push_back(std::move(i));
+      }
+      rec->const_defs.clear();
+
+      $$ = ast;
+
+  } | ConstDefAtom{
+
+      auto ast = new ConstDeclAST();
+      ast->const_defs.push_back(unique_ptr<ConstDefAST>((ConstDefAST*)$1));
+      $$ = ast;
+  }
+  ;
+ConstDefAtom
+  : IDENT "=" ConstInitVal{
+      auto ast = new ConstDefAST();
+      ast->ident = *unique_ptr<std::string>($1);
+      ast->const_init_val = unique_ptr<ConstInitValAST>((ConstInitValAST*)$3);
+      $$ = ast;
+  }
+  ;
+
+ConstInitVal
+  : ConstExp {
+    auto ast = new ConstInitValAST();
+    ast->const_exp = unique_ptr<ConstExpAST>((ConstExpAST *)$1);
+    $$ = ast;
+  }
+  ;
+VarDecl
+  : BType VarDef ';' {
+    auto ast = (VarDeclAST *)$2;
+    ast->btype = unique_ptr<BTypeAST>((BTypeAST *) $1);
+    $$ = ast;
+  }
+  ;
+VarDef
+  : VarDefAtom ',' VarDef {
+    auto ast = new VarDeclAST();
+    auto rec = unique_ptr<VarDeclAST>((VarDeclAST *)$3);
+    ast->var_defs.push_back(unique_ptr<VarDefAST>((VarDefAST*)$1));
+    
+    for (auto &i : rec->var_defs){
+        ast->var_defs.push_back(std::move(i));
+      }
+    rec->var_defs.clear();
+    $$ = ast;
+
+  } | VarDefAtom {
+
+    auto ast = new VarDeclAST();
+    ast->var_defs.push_back(unique_ptr<VarDefAST>((VarDefAST*)$1));
+    $$ = ast;
+
+  }
+  ;
+
+VarDefAtom
+  : IDENT{
+
+    auto ast = new VarDefAST();
+    ast->ident = *unique_ptr<string>($1);
+    $$ = ast;
+
+  }  | IDENT '=' InitVal {
+
+    auto ast = new VarDefAST();
+    ast->ident = *unique_ptr<string>($1);
+    ast->init_val = unique_ptr<InitValAST>((InitValAST *)$3);
+    $$ = ast;
+
+  }
+  ;
+
+InitVal
+  : Exp{
+
+    auto ast = new InitValAST();
+    ast->exp  = unique_ptr<ExpAST>((ExpAST *)$1);
+    $$ = ast;
+
+  } 
+  ;
 FuncDef
   : FuncType IDENT '(' ')' Block {
     auto ast = new FuncDefAST();
@@ -106,18 +229,62 @@ FuncType
   ;
 
 Block
-  : '{' Stmt '}' {
+  : '{' BlockItem '}' {
+    // auto ast = new BlockAST();
+    // ast->blockitem = unique_ptr<BlockItemAST>((BlockItemAST*)$2);
+    // std::cout<<"3";
+    $$ = $2;
+  }
+  ;
+BlockItem
+  : BlockItemAtom BlockItem{
+    
     auto ast = new BlockAST();
-    ast->stmt = unique_ptr<StmtAST>((StmtAST*)$2);
-    std::cout<<"3";
+    ast->blockitem.push_back(unique_ptr<BlockItemAST>((BlockItemAST*)$1));
+    auto rec = unique_ptr<BlockAST>((BlockAST*)$2);
+
+    for(auto &i : rec->blockitem){
+      ast->blockitem.push_back(std::move(i));
+    }
+
+    rec->blockitem.clear();
+    $$ = ast;
+
+  } | BlockItemAtom{
+      auto ast = new BlockAST();
+      ast->blockitem.push_back(unique_ptr<BlockItemAST>((BlockItemAST*)$1));
+      $$ = ast;
+  }
+  ;
+BlockItemAtom
+  :Decl{
+    
+    auto ast = new BlockItemAST();
+    ast->tag = BlockItemAST::DECL;
+    ast->decl = unique_ptr<DeclAST>((DeclAST*)$1);
+
+    $$ = ast;
+
+  } | Stmt{
+
+    auto ast = new BlockItemAST();
+    ast->tag = BlockItemAST::STMT;
+    ast->stmt = unique_ptr<StmtAST>((StmtAST*)$1);
     $$ = ast;
   }
   ;
-
 Stmt
   : RETURN Exp ';' {
     auto ast = new StmtAST();
+    ast->tag = StmtAST::RETURN;
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$2);
+    // std::cout<<"2";
+    $$ = ast;
+  } | LVal "=" Exp ";" {
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::ASSIGN;
+    ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
+    ast->lval = unique_ptr<LValAST>((LValAST*)$1);
     // std::cout<<"2";
     $$ = ast;
   }
@@ -127,6 +294,12 @@ Exp
     auto ast = new ExpAST();
     ast->l_or_exp = unique_ptr<LOrExpAST>((LOrExpAST *)$1);
     $$ = ast;
+  }
+  ;
+LVal
+  : IDENT {
+    auto ast = new LValAST();
+    ast->ident = *unique_ptr<std::string>($1);
   }
   ;
 PrimaryExp
@@ -141,6 +314,13 @@ PrimaryExp
     ast->tag = PrimaryExpAST::NUMBER;
     ast->number = $1;
     $$ = ast;
+  } | LVal {
+
+    auto ast = new PrimaryExpAST();
+    ast->tag = PrimaryExpAST::LVAL;
+    ast->lval = unique_ptr<LValAST>((LValAST *)$1);
+    $$ = ast;
+  
   }
   ;
 
@@ -344,7 +524,13 @@ LOrExp
     $$ = ast;
 
   }
-
+ConstExp
+  : Exp {
+    auto ast = new ConstExpAST();
+    ast->exp = unique_ptr<ExpAST>((ExpAST *)$1);
+    $$ = ast;
+  }
+  ;
 %%
 
 // 定义错误处理函数, 其中第二个参数是错误信息

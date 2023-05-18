@@ -27,17 +27,17 @@ int main(int argc, const char *argv[]) {
     assert(yyin);
     
     // 输出文件
-    // ofstream fout(output);
+  //   ofstream fout(output);
   // // 获取测试用例
-    // ifstream ihaha(input);
-    // ofstream fhaha("./testcase.txt", ios::app);
-    // string tmp;
-    // fhaha <<"filename: " << input << endl;
-    // while(getline(ihaha, tmp)){
-    //     fhaha << tmp + "\n";
-    // }
-    // fhaha.close();ihaha.close();
-    // return 0;
+  //   ifstream ihaha(input);
+  //   ofstream fhaha("./testcase.txt", ios::app);
+  //   string tmp;
+  //   fhaha <<"filename: " << input << endl;
+  //   while(getline(ihaha, tmp)){
+  //       fhaha << tmp + "\n";
+  //   }
+  //   fhaha.close();ihaha.close();
+  //   return 0;
 
 
     unique_ptr<BaseAST> base_ast;
