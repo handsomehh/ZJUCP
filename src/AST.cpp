@@ -71,7 +71,7 @@ void VarDefAST::Dump()const {
     std::string name = "@"+ident;
     ks.appendaddtab(name + ks.alloc32i);
     sb.insert(ident,SymbolTable::INT);
-    if(!init_val){
+    if(init_val){
         int value = init_val->Get_value();
         ks.appendaddtab("store " + std::to_string(value) + ", " + name + '\n');
         sb.Update(ident,value);  
@@ -145,10 +145,12 @@ std::string StmtAST::Dump()const {
     if(tag == StmtAST::RETURN){
         res = exp->Dump();
     }else if(tag == StmtAST::ASSIGN){
-        res = exp->Dump();
+        int res_int = exp->Get_value();
         string to = lval->ident;
         if(sb.is_exist(to)){
-            ks.appendaddtab("store " + res + ", @" + to + '\n');
+            ks.appendaddtab("store " + std::to_string(res_int) + ", @" + to + '\n');
+            sb.Update(to,res_int);
+            res = std::to_string(res_int);
         }else{
             cout<<"assgin to a undeclear var :"<<to<<endl;
         }
@@ -439,6 +441,9 @@ std::string PrimaryExpAST::Dump()const {
     }
     else if(tag == PrimaryExpAST::NUMBER){
         return std::to_string(number);
+    }else if(tag == PrimaryExpAST::LVAL){
+        
+        return std::to_string(sb.Get_value(lval->ident));
     }
 }
 

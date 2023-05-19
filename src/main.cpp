@@ -45,7 +45,8 @@ int main(int argc, const char *argv[]) {
 
     auto ret = yyparse(base_ast);
     assert(!ret);
-
+    assert(base_ast);
+    std::cout<<"parse ok"<<std::endl;
     ast.reset((CompUnitAST *)base_ast.release());
     ast->Dump();
     

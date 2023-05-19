@@ -90,6 +90,7 @@ Decl
     auto ast = new DeclAST();
     ast->tag = DeclAST::CONST;
     ast->const_decl = unique_ptr<ConstDeclAST>((ConstDeclAST *)$1);
+    std::cout<<"const decl"<<std::endl;
     $$ = ast;
 
   } | VarDecl {
@@ -106,6 +107,8 @@ ConstDecl
   : CONST BType ConstDef ';'{
     auto ast = (ConstDeclAST *)$3;
     ast->btype = unique_ptr<BTypeAST>((BTypeAST *)$2);
+    std::cout<<"CONST BType ConstDef"<<std::endl;
+
     $$ = ast;
   }
   ;
@@ -113,12 +116,13 @@ BType
   : INT {
     auto ast = new BTypeAST();
     ast->tag = BTypeAST::INT;
-    // std::cout<<"4";
+    std::cout<<"Btype";
     $$ = ast;
   }
   ;
 ConstDef
   : ConstDefAtom ',' ConstDef{
+    std::cout<<"ConstDef"<<std::endl;
 
       auto ast = new ConstDeclAST();
       auto rec = unique_ptr<ConstDeclAST>((ConstDeclAST*)$3);
@@ -132,6 +136,7 @@ ConstDef
       $$ = ast;
 
   } | ConstDefAtom{
+    std::cout<<"ConstDefAtom"<<std::endl;
 
       auto ast = new ConstDeclAST();
       ast->const_defs.push_back(unique_ptr<ConstDefAST>((ConstDefAST*)$1));
@@ -139,7 +144,9 @@ ConstDef
   }
   ;
 ConstDefAtom
-  : IDENT "=" ConstInitVal{
+  : IDENT '=' ConstInitVal{
+    std::cout<<"IDENT = ConstInitVal"<<std::endl;
+
       auto ast = new ConstDefAST();
       ast->ident = *unique_ptr<std::string>($1);
       ast->const_init_val = unique_ptr<ConstInitValAST>((ConstInitValAST*)$3);
@@ -149,6 +156,8 @@ ConstDefAtom
 
 ConstInitVal
   : ConstExp {
+    std::cout<<"ConstExp"<<std::endl;
+
     auto ast = new ConstInitValAST();
     ast->const_exp = unique_ptr<ConstExpAST>((ConstExpAST *)$1);
     $$ = ast;
@@ -280,17 +289,20 @@ Stmt
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$2);
     // std::cout<<"2";
     $$ = ast;
-  } | LVal "=" Exp ";" {
+  } | LVal '=' Exp ';' {
+    
     auto ast = new StmtAST();
     ast->tag = StmtAST::ASSIGN;
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
     ast->lval = unique_ptr<LValAST>((LValAST*)$1);
+    std::cout<<ast->lval->ident<<"= EXP"<<std::endl;
     // std::cout<<"2";
     $$ = ast;
   }
   ;
 Exp
   : LOrExp {
+    // std::cout<<"LOrExp"<<std::endl;
     auto ast = new ExpAST();
     ast->l_or_exp = unique_ptr<LOrExpAST>((LOrExpAST *)$1);
     $$ = ast;
@@ -298,8 +310,12 @@ Exp
   ;
 LVal
   : IDENT {
+
     auto ast = new LValAST();
     ast->ident = *unique_ptr<std::string>($1);
+    std::cout<<ast->ident<<std::endl;
+
+    $$ = ast;
   }
   ;
 PrimaryExp
@@ -315,7 +331,7 @@ PrimaryExp
     ast->number = $1;
     $$ = ast;
   } | LVal {
-
+    // std::cout<<"LVal"<<std::endl;
     auto ast = new PrimaryExpAST();
     ast->tag = PrimaryExpAST::LVAL;
     ast->lval = unique_ptr<LValAST>((LValAST *)$1);
@@ -526,6 +542,7 @@ LOrExp
   }
 ConstExp
   : Exp {
+    std::cout<<"Exp"<<std::endl;
     auto ast = new ConstExpAST();
     ast->exp = unique_ptr<ExpAST>((ExpAST *)$1);
     $$ = ast;
@@ -536,6 +553,6 @@ ConstExp
 // 定义错误处理函数, 其中第二个参数是错误信息
 // parser 如果发生错误 (例如输入的程序出现了语法错误), 就会调用这个函数
 void yyerror(unique_ptr<BaseAST> &ast, const char *s) {
-  cerr << "error: " << s << endl;
+  cerr << "yacc error: " << s << endl;
   // ast->Dump();
 }

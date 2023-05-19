@@ -6,7 +6,7 @@
 #include <memory>
 #include <variant>
 #include <iostream>
-
+// #include <variant>
 using namespace std;
 
 class Counter{
@@ -49,6 +49,18 @@ class Symbol{
             }else if(tag == Symbol::CONST){
                 ConstInt in(value_);
                 value = in;
+            }
+        }
+        void Print(){
+            std::cout<<"  tag:";
+            if (tag == Symbol::INT){
+                std::cout<<"int "<< std::get<IntVar>(value).value<<std::endl;
+                // IntVar in(value_);
+                // value = in;
+            }else if(tag == Symbol::CONST){
+                std::cout<<"const "<< std::get<ConstInt>(value).value<<std::endl;
+                // ConstInt in(value_);
+                // value = in;
             }
         }
 };
@@ -113,7 +125,7 @@ class SymbolTable{
     }
     int Get_value(const std::string &name){
         if(!is_exist(name)){
-            std::cout<<"not found "<<name<<std::endl;
+            std::cout<<"not found :"<<name<<std::endl;
             return -1;
         }else{
             auto res = map.find(name);
@@ -123,6 +135,17 @@ class SymbolTable{
                 return std::get<ConstInt>(res->second->value).value;
             }
             // map.find(name)->value
+        }
+    }
+    void Print(){
+        for(auto i : map){
+            std::cout<<"name:"<<i.first<<std::endl;
+            // std::cout<<"value"<<i->second<<std::endl;
+            if(i.second){
+                i.second->Print();
+            }else{
+                std::cout<<"have no value"<<std::endl;
+            }
         }
     }
 
