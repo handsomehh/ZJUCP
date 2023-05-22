@@ -1,196 +1,87 @@
-filename: /opt/bin/testcases/lv3/00_pos.c
+filename: /opt/bin/testcases/lv5/0_block.c
 int main() {
-  return +2;
-}
-filename: /opt/bin/testcases/lv3/01_neg_0.c
-int main() {
-  return -0;
-}
-filename: /opt/bin/testcases/lv3/02_neg_2.c
-int main() {
-  return -2;
-}
-filename: /opt/bin/testcases/lv3/03_neg_max.c
-int main() {
-  return -2147483647;
-}
-filename: /opt/bin/testcases/lv3/04_not_0.c
-int main() {
-  return !0;
-}
-filename: /opt/bin/testcases/lv3/05_not_10.c
-int main() {
-  return !10;
-}
-filename: /opt/bin/testcases/lv3/06_complex_unary.c
-int main() {
-  return +-+!(!-10000);
-}
-filename: /opt/bin/testcases/lv3/07_add.c
-int main() {
-  return 1 + 2;
-}
-filename: /opt/bin/testcases/lv3/08_add_neg.c
-int main() {
-  return 1 + -2;
-}
-filename: /opt/bin/testcases/lv3/09_sub.c
-int main() {
-  return 1 - 2;
-}
-filename: /opt/bin/testcases/lv3/10_sub_neg.c
-int main() {
-  return 1 - -2;
-}
-filename: /opt/bin/testcases/lv3/11_mul.c
-int main() {
-  return 2 * 4;
-}
-filename: /opt/bin/testcases/lv3/12_mul_neg.c
-int main() {
-  return 2 * -4;
-}
-filename: /opt/bin/testcases/lv3/13_div.c
-int main() {
-  return 10 / 2;
-}
-filename: /opt/bin/testcases/lv3/14_div_neg.c
-int main() {
-  return 10 / -3;
-}
-filename: /opt/bin/testcases/lv3/15_mod.c
-int main() {
-  return 7 % 4;
-}
-filename: /opt/bin/testcases/lv3/16_mod_neg.c
-int main() {
-  return 7 % -4;
-}
-filename: /opt/bin/testcases/lv3/17_lt.c
-int main() {
-  return 1 < 2;
-}
-filename: /opt/bin/testcases/lv3/18_gt.c
-int main() {
-  return 9 > 10;
-}
-filename: /opt/bin/testcases/lv3/19_le.c
-int main() {
-  return 9 <= 3;
-}
-filename: /opt/bin/testcases/lv3/20_ge.c
-int main() {
-  return 10 >= 7;
-}
-filename: /opt/bin/testcases/lv3/21_eq.c
-int main() {
-  return 1 == 2;
-}
-filename: /opt/bin/testcases/lv3/22_ne.c
-int main() {
-  return 1 != 0;
-}
-filename: /opt/bin/testcases/lv3/23_lor.c
-int main() {
-  return 11 || 0;
-}
-filename: /opt/bin/testcases/lv3/24_land.c
-int main() {
-  return 2 && 4;
-}
-filename: /opt/bin/testcases/lv3/25_int_min.c
-int main() {
-  return -2147483647 - 1;
-}
-filename: /opt/bin/testcases/lv3/26_parentheses.c
-int main() {
-  return 1 + 2 * (3 + 4);
-}
-filename: /opt/bin/testcases/lv3/27_complex_binary.c
-int main() {
-  return 1 + 2 * (!3 || 4) < 5 != 6 && -7;
-}
-filename: /opt/bin/testcases/lv4/00_const.c
-int main() {
-  const int x = 1;
-  return x;
-}
-filename: /opt/bin/testcases/lv4/01_const_expr.c
-int main() {
-  const int x = 1 + 2 * 3 - 4;
-  return x;
-}
-filename: /opt/bin/testcases/lv4/02_multiple_consts.c
-int main() {
-  const int x = 2, y = x + 1, z = x * y;
-  return z;
-}
-filename: /opt/bin/testcases/lv4/03_complex_const.c
-int main() {
-  const int x = 1 * 2 || 2 * 3 && 3 * 4;
-  const int y = x * 3 > 10;
-  return y + 4 - x;
-}
-filename: /opt/bin/testcases/lv4/04_var.c
-int main() {
-  int x;
+  {}
   return 0;
 }
-filename: /opt/bin/testcases/lv4/05_var_init.c
+filename: /opt/bin/testcases/lv5/1_ret_from_block.c
 int main() {
-  int x = 1;
-  return x;
+  {
+    return 20;
+  }
 }
-filename: /opt/bin/testcases/lv4/06_var_expr.c
+filename: /opt/bin/testcases/lv5/2_blocks.c
 int main() {
-  int x = 1;
-  return x + 1;
+  {{{}}}
+  {} {}
+  {
+    { } {
+      {}
+    }
+  } {} {
+    {{}} { }  {} {
+      {}
+    }
+  }
+  return 1;
 }
-filename: /opt/bin/testcases/lv4/07_var_main.c
+filename: /opt/bin/testcases/lv5/3_exp.c
 int main() {
-  int main = 10;
-  return main;
+  1 + 2;
+  return 1;
 }
-filename: /opt/bin/testcases/lv4/08_multiple_vars.c
+filename: /opt/bin/testcases/lv5/4_empty_exp.c
 int main() {
-  int x = 1, y = 2, z = 3;
-  return x + y + z;
+  ;
+  return 6;
 }
-filename: /opt/bin/testcases/lv4/09_complex_vars.c
+filename: /opt/bin/testcases/lv5/5_scope.c
 int main() {
-  int x = 10;
-  int y = x + 1;
-  int z = x * y + 1;
-  return z % 66;
+  int a = 1;
+  {
+    a = a + 2;
+    int a = 3;
+    a = a + 4;
+  }
+  a = a + 5;
+  return a;
 }
-filename: /opt/bin/testcases/lv4/10_assign.c
+filename: /opt/bin/testcases/lv5/6_complex_scopes.c
 int main() {
-  int x;
-  x = 1;
-  return x;
-}
-filename: /opt/bin/testcases/lv4/11_assign_read.c
-int main() {
-  int x = 1;
-  x = x + 1;
-  return x;
-}
-filename: /opt/bin/testcases/lv4/12_multiple_assigns.c
-int main() {
-  int y;
-  y = 1;
-  int x;
-  x = y + 1;
-  return x;
-}
-filename: /opt/bin/testcases/lv4/13_complex.c
-int main() {
-  int x;
-  const int k = 10 + 11;
-  int y = k;
-  x = y + 1;
-  const int n = k * 7;
-  int z = n - x, w = n - y;
-  w = w * 1 * 1 * 1;
-  return z + w;
+  int a = 1, sum = 0;
+  {
+    a = a + 2;
+    int b = a + 3;
+    b = b + 4;
+    sum = sum + a + b;
+    {
+      b = b + 5;
+      int c = b + 6;
+      a = a + c;
+      sum = sum + a + b + c;
+      {
+        b = b + a;
+        int a = c + 7;
+        a = a + 8;
+        sum = sum + a + b + c;
+        {
+          b = b + a;
+          int b = c + 9;
+          a = a + 10;
+          const int a = 11;
+          b = b + 12;
+          sum = sum + a + b + c;
+          {
+            c = c + b;
+            int c = b + 13;
+            c = c + a;
+            sum = sum + a + b + c;
+          }
+          sum = sum - c;
+        }
+        sum = sum - b;
+      }
+      sum = sum - a;
+    }
+  }
+  return sum % 77;
 }

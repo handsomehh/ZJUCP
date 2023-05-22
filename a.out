@@ -1,7 +1,0 @@
-fun @main(): i32 {
-%entry:
-  @x = alloc i32
-  store 1, @x
-  ret 1
-}
-

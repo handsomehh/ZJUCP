@@ -133,10 +133,11 @@ public:
 class StmtAST : public BaseAST {
  public:
     // int number;
-    enum TYPE {RETURN,ASSIGN};
+    enum TYPE {RETURN, ASSIGN, EXP, BLOCK};
     TYPE tag;
     std::unique_ptr<ExpAST> exp;
     std::unique_ptr<LValAST> lval;
+    std::unique_ptr<BlockAST> block;
     std::string Dump() const;
 };
 

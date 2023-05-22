@@ -243,6 +243,9 @@ Block
     // ast->blockitem = unique_ptr<BlockItemAST>((BlockItemAST*)$2);
     // std::cout<<"3";
     $$ = $2;
+  } | '{' '}' {
+    auto ast = new BlockAST();
+    $$ = ast;
   }
   ;
 BlockItem
@@ -289,14 +292,30 @@ Stmt
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$2);
     // std::cout<<"2";
     $$ = ast;
+  } | RETURN ';'{
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::RETURN;
   } | LVal '=' Exp ';' {
-    
     auto ast = new StmtAST();
     ast->tag = StmtAST::ASSIGN;
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
     ast->lval = unique_ptr<LValAST>((LValAST*)$1);
     std::cout<<ast->lval->ident<<"= EXP"<<std::endl;
     // std::cout<<"2";
+    $$ = ast;
+  } | Exp ';'{
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::EXP;
+    ast->exp = unique_ptr<ExpAST>((ExpAST*)$1);
+    $$ = ast;
+  } | ';'{
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::EXP;
+    $$ = ast;
+  } | Block{
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::BLOCK;
+    ast->block = unique_ptr<BlockAST>((BlockAST*)$1);
     $$ = ast;
   }
   ;
@@ -556,3 +575,5 @@ void yyerror(unique_ptr<BaseAST> &ast, const char *s) {
   cerr << "yacc error: " << s << endl;
   // ast->Dump();
 }
+
+

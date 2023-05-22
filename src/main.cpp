@@ -26,7 +26,7 @@ int main(int argc, const char *argv[]) {
     yyin = fopen(input, "r");
     assert(yyin);
     
-    // 输出文件
+  //   // 输出文件
   //   ofstream fout(output);
   // // 获取测试用例
   //   ifstream ihaha(input);
@@ -43,12 +43,14 @@ int main(int argc, const char *argv[]) {
     unique_ptr<BaseAST> base_ast;
     unique_ptr<CompUnitAST> ast;
 
+    std::cout<<"parsing..."<<std::endl;
     auto ret = yyparse(base_ast);
     assert(!ret);
     assert(base_ast);
-    std::cout<<"parse ok"<<std::endl;
+    std::cout<<"parse success!"<<std::endl;
     ast.reset((CompUnitAST *)base_ast.release());
     ast->Dump();
+    
     
     const char *str = ks.c_str();
     
