@@ -147,6 +147,13 @@ std::string BlockAST::Dump()const {
     std::string res;
     for(auto &i : blockitem){
         res = i->Dump();
+        // 在一个block中，如果出现了Return语句，那么该block后面的代码均可忽略，即该block可以提前结束
+        if(i->tag == BlockItemAST::STMT){
+            if(i->stmt->tag == StmtAST::RETURN){
+                symbol_tb_stack.quit();
+                return res;
+            }
+        }
     }
     std::cout << " }";
 
@@ -181,16 +188,15 @@ std::string StmtAST::Dump()const {
     else if (tag == StmtAST::ASSIGN){
         int res_int = exp->Get_value();
         string to = lval->ident;
-        cout << "ASSIGN "<< res_int << " to " << to;
+        cout << "ASSIGN " << res_int << " to " << to;
         int tb_id = symbol_tb_stack.is_exist(to);
         if(tb_id > 0){
             std::string ir_name;
-
             ks.appendaddtab("store " + std::to_string(res_int) + ", " + symbol_tb_stack.Get_ir_name(to) + '\n');
             symbol_tb_stack.Update(to,res_int);
             res = std::to_string(res_int);
         }else{
-            cout<< "assgin to a undeclear var: "<<to;
+            cout << "assgin to a undeclear var: " << to;
         }
         // res = lval->Dump();
     }
@@ -522,8 +528,14 @@ std::string PrimaryExpAST::Dump()const {
         cout << "NUMBER_" << number;
         return std::to_string(number);
     }else if(tag == PrimaryExpAST::LVAL){
-        
-        return std::to_string(symbol_tb_stack.Get_value(lval->ident));
+        if(symbol_tb_stack.Get_type(lval->ident) == SymbolTable::INT){
+            std::string temp = symbol_tb_stack.Get_ir_name(lval->ident);
+            std::string temp2 = symbol_tb_stack.Get_count();
+            ks.appendaddtab(temp2+" = "+"load "+temp);
+            return temp2;
+        }else if(symbol_tb_stack.Get_type(lval->ident) == SymbolTable::CONST){
+            return std::to_string(symbol_tb_stack.Get_value(lval->ident));
+        }
     }
 }
 

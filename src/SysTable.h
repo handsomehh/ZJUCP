@@ -199,6 +199,16 @@ class SymbolTable{
         }
     }
 
+    Symbol::TYPE Get_type(const std::string &name){
+        if(!is_exist(name)){
+            return Symbol::UNKNOWN;
+        }else{
+            auto res = map.find(name);
+            return res->second->tag;
+            // map.find(name)->value
+        }
+    }
+
     // 查找symbol table中变量name的IR名称并返回
     std::string Get_ir_name(const std::string &name){
         if(!is_exist(name)){
@@ -324,6 +334,29 @@ public:
         }
     }
 
+    // 返回name变量在最近的一个作用域的类型：变量 or 常量
+    Symbol::TYPE Get_type(const std::string &name){
+        bool is_exist = false;
+        Symbol::TYPE val = Symbol::UNKNOWN;
+        for (auto rit = symbol_table_stack.rbegin(); rit != symbol_table_stack.rend(); ++rit){
+            const auto& tb = *rit;
+            Symbol::TYPE x = tb->Get_type(name);
+            if (x != Symbol::UNKNOWN){
+                is_exist = true;
+                val = x;
+                break;
+            }
+        }
+
+        if (is_exist){
+            return val;
+        }
+        else{
+            std::cout<<"not found :"<<name<<std::endl;
+            return val;
+        }
+    }
+
     // 获取name变量在最近一个作用域的IR名称
     std::string Get_ir_name(const std::string &name){
         bool is_exist = false;
@@ -349,11 +382,5 @@ public:
     // 获取symbol table stack中符号表的张数
     int size(){
         return symbol_table_stack.size();
-    }
-
-    // 获取符号表栈中最新的符号表
-    const std::unique_ptr<SymbolTable>& get_top_symbol_tb(){
-        const auto& tb = symbol_table_stack.back();
-
     }
 };
