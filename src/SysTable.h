@@ -7,9 +7,66 @@
 #include <variant>
 #include <iostream>
 #include <cassert>
+#include <cmath>
 // #include <variant>
 using namespace std;
 
+// LabelCounter的作用是生成一个Label在Koopa IR中的名称
+// 比方说，在if-else语句里面，可能会有多个if嵌套的情况
+// 那么我们就要依次生成 %then1 %then2 ... 表示不同的跳转Label
+class LabelCounter{
+    private:
+        std::unordered_map<std::string, int> map;
+    public:
+        std::string get_label_name(const std::string &name){
+            auto it = map.find(name);
+            if (it == map.end()){
+                // 如果当前label是第一次出现，则将它加入map中
+                map.insert(std::make_pair(name, 1));
+                return name + "1";
+            }
+            else{
+                return name + std::to_string(++it->second);
+            }
+        }
+
+        void reset(){
+            map.clear();
+        }
+        
+};
+
+// VarCounter的作用是生成一个variable在Koopa IR中的名称
+// 例如，变量a在不同作用域中出现，那么它在IR中的名称分别是@a1,@a2...
+class VarCounter{
+    private:
+        std::unordered_map<std::string, int> map;
+    public:
+        std::string get_var_name(const std::string &name){
+            auto it = map.find(name);
+            if (it == map.end()){
+                // 如果当前label是第一次出现，则将它加入map中
+                map.insert(std::make_pair(name, 1));
+                return '@' + name + "1";
+            }
+            else{
+                return '@' + name + std::to_string(++it->second);
+            }
+        }
+
+        void reset(){
+            map.clear();
+        }
+        
+};
+
+/*  临时变量名称计数器
+    和前两者不同，该计数器生成的是那些，没有在代码中显式存在，用来存储临时变量的寄存器的名称
+            c                   koopa ir
+    例如 if (a == 9) ... =>  %1 = eq 9, 9
+                            br %1, %then1, %end1
+    这里的的%1就是该部分生成的
+*/
 class Counter{
   public:
     int count = 0;
@@ -39,10 +96,12 @@ class ConstInt{
 
 class Symbol{
     public:
-        std::variant<IntVar, ConstInt> value;
-        enum TYPE {INT,CONST,UNKNOWN};
+        std::string ir_name; // 表示该symbol在IR中的名称，例如变量a，在IR中的名称可以是@a1, @a2...
+        std::variant<IntVar, ConstInt> value; // 表示该symbol的值
+        enum TYPE {INT,CONST,UNKNOWN}; // 表示该symbol的类型
         TYPE tag;
-        Symbol(int value_,TYPE tag_){
+        Symbol(std::string ir_name_, int value_, TYPE tag_){
+            ir_name = ir_name_;
             tag = tag_;
             if (tag == Symbol::INT){
                 IntVar in(value_);
@@ -71,17 +130,17 @@ class SymbolTable{
     std::unordered_map<std::string,Symbol*> map;
     enum TYPE {INT,CONST};
     /*fun*/
-    int insert(const std::string &name,int value, TYPE mode){
+    int insert(const std::string &name, const std::string &ir_name, int value, TYPE mode){
         if(is_exist(name)){
             std::cout<<"var already exist :"<<name<<std::endl;
             return 0;
         }
         if(mode == SymbolTable::INT){
-            Symbol* symbol = new Symbol(value,Symbol::INT);
+            Symbol* symbol = new Symbol(ir_name, value,Symbol::INT);
             map.insert({name,symbol});
             return 1;
         }else if(mode == SymbolTable::CONST){
-            Symbol* symbol = new Symbol(value,Symbol::CONST);
+            Symbol* symbol = new Symbol(ir_name, value, Symbol::CONST);
             map.insert({name,symbol});
             return 1;
         }else{
@@ -89,13 +148,14 @@ class SymbolTable{
             return 0;
         }
     }
-    int insert(const std::string &name,TYPE mode){
+    int insert(const std::string &name, const std::string &ir_name, TYPE mode){
         if(is_exist(name)){
             std::cout<<"var already exist :"<<name<<std::endl;
             return 0;
         }
         if(mode == SymbolTable::INT){
-            map.insert({name,nullptr});
+            Symbol* symbol = new Symbol(ir_name, 0, Symbol::INT); // 如果定义的时候没有初值，默认初始化为0
+            map.insert({name,symbol});
             return 1;
         }else if(mode == SymbolTable::CONST){
             std::cout<<"const should be initial,but not :"<<name<<std::endl;
@@ -113,7 +173,7 @@ class SymbolTable{
         }
         auto res = map.find(name);
         if (res->second == nullptr){
-            res->second = new Symbol(value,Symbol::INT);
+            std::cout << "SysTable.h:168 -- shouldn't be nullptr" << endl;
             // map.insert({name,res});
         }else{
             std::get<IntVar>(res->second->value).value = value;
@@ -139,6 +199,16 @@ class SymbolTable{
         }
     }
 
+    // 查找symbol table中变量name的IR名称并返回
+    std::string Get_ir_name(const std::string &name){
+        if(!is_exist(name)){
+            return "";
+        }else{
+            auto res = map.find(name);
+            return res->second->ir_name;
+        }
+    }
+
     void Print(){
         for(auto i : map){
             std::cout<<"name:"<<i.first<<std::endl;
@@ -156,7 +226,11 @@ class SymbolTable{
 class SymbolTableStack{
 private:
     std::deque<std::unique_ptr<SymbolTable>> symbol_table_stack;
+
     Counter* mycount = new Counter();
+    LabelCounter* label_counter = new LabelCounter();
+    VarCounter* var_counter = new VarCounter();
+
 public:
     // 插入一张符号表
     void alloc(){
@@ -183,13 +257,15 @@ public:
         return tb_id;
     }
 
+
+
     // 向符号表栈（最顶端的符号表）插入一个变量
-    int insert(const std::string &name,int value, SymbolTable::TYPE mode){
-        return symbol_table_stack.back()->insert(name, value, mode);
+    int insert(const std::string &name, const std::string &ir_name, int value, SymbolTable::TYPE mode){
+        return symbol_table_stack.back()->insert(name, ir_name, value, mode);
     }
 
-    int insert(const std::string &name,SymbolTable::TYPE mode){
-        return symbol_table_stack.back()->insert(name, mode);
+    int insert(const std::string &name, const std::string &ir_name, SymbolTable::TYPE mode){
+        return symbol_table_stack.back()->insert(name, ir_name, mode);
     }
 
     // 更改符号表栈（最近作用域对应的的符号表）中的变量值
@@ -214,7 +290,19 @@ public:
         mycount->Reset();
     }
 
-    // 获取包含name，并且距离当前作用域最近的那个作用域中符号表里面name的值
+    // 返回一个Label在Koopa IR中的名称
+    // 比方说，在if-else语句里面，可能会有多个if嵌套的情况
+    // 那么我们就要依次生成 %then1 %then2 ... 表示不同的跳转Label
+    string Get_label_name(const std::string &name){
+        return label_counter->get_label_name(name);
+    }
+
+    // 返回一个变量或者常量在Koopa IR中的名称
+    string Get_var_name(const std::string &name){
+        return var_counter->get_var_name(name);
+    }
+
+    // 获取name变量在最近一个作用域的值
     int Get_value(const std::string &name){
         bool is_exist = false;
         int val = -1;
@@ -233,6 +321,28 @@ public:
         }
         else{
             std::cout<<"not found :"<<name<<std::endl;
+        }
+    }
+
+    // 获取name变量在最近一个作用域的IR名称
+    std::string Get_ir_name(const std::string &name){
+        bool is_exist = false;
+        std::string ir_name = "";
+        for (auto rit = symbol_table_stack.rbegin(); rit != symbol_table_stack.rend(); ++rit){
+            const auto& tb = *rit;
+            std::string x = tb->Get_ir_name(name);
+            if (x != ""){
+                is_exist = true;
+                ir_name = x;
+                break;
+            }
+        }
+
+        if (is_exist){
+            return ir_name;
+        }
+        else{
+            std::cout<<"not found :"<< name <<std::endl;
         }
     }
 

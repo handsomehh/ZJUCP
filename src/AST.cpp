@@ -14,6 +14,12 @@ using namespace std;
 KoopaString ks;
 SymbolTableStack symbol_tb_stack;
 
+/* ctrl: 严格来说，叫 is_jump_flag
+   这玩意的功能在于，判断当前的IR代码块是否以跳转指令结尾
+   如果不是以跳转指令结尾，我们要手动加一个jump语句
+*/
+bool ctrl;
+
 void CompUnitAST::Dump()const {
     std::cout << "CompUnitAST { ";
     func_def->Dump();
@@ -45,14 +51,15 @@ void ConstDeclAST::Dump()const {
 void ConstDefAST::Dump()const {
     std::cout << "ConstDefAST { def:" << ident;
     // func_def->Dump();
-    int value = const_init_val->Dump();
-
     // 这个判断条件是为了保证在当前作用域，该常量只能被定义一次
     if(symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size()){
         std::cout<<"redefined const val: "<<ident;
         return;
     }
-    symbol_tb_stack.insert(ident,value,SymbolTable::CONST);
+
+    int value = const_init_val->Dump();
+    std::string ir_name = symbol_tb_stack.Get_var_name(ident);
+    symbol_tb_stack.insert(ident, ir_name, value,SymbolTable::CONST);
     std::cout << " }";
     // ks.declLibFunc();
 }
@@ -79,12 +86,12 @@ void VarDefAST::Dump()const {
         return ;
     }
 
-    std::string name = "@" + ident + std::to_string(symbol_tb_stack.size());
-    ks.appendaddtab(name + ks.alloc32i);
-    symbol_tb_stack.insert(ident,SymbolTable::INT);
+    std::string ir_name = symbol_tb_stack.Get_var_name(ident);
+    ks.appendaddtab(ir_name + ks.alloc32i);
+    symbol_tb_stack.insert(ident, ir_name, SymbolTable::INT);
     if(init_val){
         int value = init_val->Get_value();
-        ks.appendaddtab("store " + std::to_string(value) + ", " + name + '\n');
+        ks.appendaddtab("store " + std::to_string(value) + ", " + ir_name + '\n');
         symbol_tb_stack.Update(ident,value);  
     }
 
@@ -96,6 +103,9 @@ int InitValAST::Get_value() {
     // return const_exp-Dump();
 }
 void FuncDefAST::Dump()const {
+    // 每个函数内部重置临时变量计数器（不知道有没有必要）
+    // func1(){%1, %2 ...}
+    // func2(){%1, %2 ...}
     symbol_tb_stack.Reset_count();
 
     std::cout << "FuncDefAST { ";
@@ -108,13 +118,13 @@ void FuncDefAST::Dump()const {
     }
     ks.append(" {\n");
     ks.label("%entry");
+    ctrl = true;
     
     func_type->Dump();
     std::cout << ", " << ident << ", ";
     std::string res = block->Dump();
     std::cout << " }";
     
-    ks.ret(res);
     ks.append("}\n\n");
 
 }
@@ -164,6 +174,9 @@ std::string StmtAST::Dump()const {
     if (tag == StmtAST::RETURN){
         cout << "RETURN ";
         res = exp->Dump();
+        ks.ret(res);
+
+        ctrl = false;
     }
     else if (tag == StmtAST::ASSIGN){
         int res_int = exp->Get_value();
@@ -171,7 +184,9 @@ std::string StmtAST::Dump()const {
         cout << "ASSIGN "<< res_int << " to " << to;
         int tb_id = symbol_tb_stack.is_exist(to);
         if(tb_id > 0){
-            ks.appendaddtab("store " + std::to_string(res_int) + ", @" + to + std::to_string(tb_id) + '\n');
+            std::string ir_name;
+
+            ks.appendaddtab("store " + std::to_string(res_int) + ", " + symbol_tb_stack.Get_ir_name(to) + '\n');
             symbol_tb_stack.Update(to,res_int);
             res = std::to_string(res_int);
         }else{
@@ -188,10 +203,42 @@ std::string StmtAST::Dump()const {
     else if (tag == StmtAST::BLOCK){
         res = block->Dump();
     }
+    else if (tag == StmtAST::IF){
+        std::cout << "IF (" ;
+        std::string s = exp->Dump();
+        std::cout << ") ";
+        std::string if_label = symbol_tb_stack.Get_label_name(ks.if_label);
+        std::string else_label = symbol_tb_stack.Get_label_name(ks.else_label);
+        std::string end_label = symbol_tb_stack.Get_label_name(ks.end_label);
+
+        if (else_stmt) 
+            ks.appendaddtab("br " + s + ", " + if_label + ", " + else_label + '\n');
+        else 
+            ks.appendaddtab("br " + s + ", " + if_label + ", " + end_label + '\n');
+
+        ctrl = true;
+        ks.label(if_label);
+        res = if_stmt->Dump();
+        if (ctrl)
+            ks.appendaddtab("jump " + end_label + '\n' );
+        
+        if (else_stmt){
+            std::cout << " ELSE ";
+            ctrl = true;
+            ks.label(else_label);
+            res = else_stmt->Dump();
+            if (ctrl)
+                ks.appendaddtab("jump " + end_label + '\n' );
+        }
+
+        ctrl = true;
+        ks.label(end_label);
+    }
     // exp->Dump();
     std::cout << " }";
     return res;
 }
+
 
 std::string ExpAST::Dump()const {
     std::cout << "ExpAST { ";

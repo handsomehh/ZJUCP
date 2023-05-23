@@ -47,11 +47,12 @@ int main(int argc, const char *argv[]) {
     auto ret = yyparse(base_ast);
     assert(!ret);
     assert(base_ast);
-    std::cout<<"parse success!"<<std::endl;
+    std::cout<<"parse success!!"<<std::endl;
+    std::cout << "111" << endl;
     ast.reset((CompUnitAST *)base_ast.release());
+    std::cout << "222" << endl;
     ast->Dump();
-    
-    
+
     const char *str = ks.c_str();
     
     ofstream ofs(output);

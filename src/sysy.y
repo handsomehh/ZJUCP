@@ -44,7 +44,7 @@ using namespace std;
 // lexer 返回的所有 token 种类的声明
 // 注意 IDENT 和 INT_CONST 会返回 token 的值, 分别对应 str_val 和 int_val
 
-%token INT RETURN EQ NE LEQ BGE AND OR CONST
+%token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
 %type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom
@@ -52,20 +52,42 @@ using namespace std;
 %type <char_val> UnaryOp MULOp AddOp
 %%
 /*
-Stmt        ::= "return" Exp ";";
+当前语法支持：
+CompUnit      ::= FuncDef;
 
+Decl          ::= ConstDecl | VarDecl;
+ConstDecl     ::= "const" BType ConstDef {"," ConstDef} ";";
+BType         ::= "int";
+ConstDef      ::= IDENT "=" ConstInitVal;
+ConstInitVal  ::= ConstExp;
+VarDecl       ::= BType VarDef {"," VarDef} ";";
+VarDef        ::= IDENT | IDENT "=" InitVal;
+InitVal       ::= Exp;
 
-Exp         ::= AddExp | LOrExp | UnaryExp;
-PrimaryExp  ::= "(" Exp ")" | Number;
-Number      ::= INT_CONST;
-UnaryExp    ::= PrimaryExp | UnaryOp UnaryExp;
-UnaryOp     ::= "+" | "-" | "!";
-MulExp      ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
-AddExp      ::= MulExp | AddExp ("+" | "-") MulExp;
-RelExp      ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
-EqExp       ::= RelExp | EqExp ("==" | "!=") RelExp;
-LAndExp     ::= EqExp | LAndExp "&&" EqExp;
-LOrExp      ::= LAndExp | LOrExp "||" LAndExp;
+FuncDef       ::= FuncType IDENT "(" ")" Block;
+FuncType      ::= "int";
+
+Block         ::= "{" {BlockItem} "}";
+BlockItem     ::= Decl | Stmt;
+Stmt          ::= LVal "=" Exp ";"
+                | [Exp] ";"
+                | Block
+                | "return" [Exp] ";";
+
+Exp           ::= LOrExp;
+LVal          ::= IDENT;
+PrimaryExp    ::= "(" Exp ")" | LVal | Number;
+Number        ::= INT_CONST;
+UnaryExp      ::= PrimaryExp | UnaryOp UnaryExp;
+UnaryOp       ::= "+" | "-" | "!";
+MulExp        ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
+AddExp        ::= MulExp | AddExp ("+" | "-") MulExp;
+RelExp        ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
+EqExp         ::= RelExp | EqExp ("==" | "!=") RelExp;
+LAndExp       ::= EqExp | LAndExp "&&" EqExp;
+LOrExp        ::= LAndExp | LOrExp "||" LAndExp;
+ConstExp      ::= Exp;
+
 
 */
 
@@ -74,6 +96,7 @@ LOrExp      ::= LAndExp | LOrExp "||" LAndExp;
 // 而 parser 一旦解析完 CompUnit, 就说明所有的 token 都被解析了, 即解析结束了
 // 此时我们应该把 FuncDef 返回的结果收集起来, 作为 AST 传给调用 parser 的函数
 // $1 指代规则里第一个符号的返回值, 也就是 FuncDef 的返回值
+
 CompUnit
   : FuncDef {
     auto comp_unit = make_unique<CompUnitAST>();
@@ -268,6 +291,7 @@ BlockItem
       $$ = ast;
   }
   ;
+
 BlockItemAtom
   :Decl{
     
@@ -285,6 +309,7 @@ BlockItemAtom
     $$ = ast;
   }
   ;
+
 Stmt
   : RETURN Exp ';' {
     auto ast = new StmtAST();
@@ -319,6 +344,24 @@ Stmt
     $$ = ast;
   }
   ;
+
+Stmt
+  : IF '(' Exp ')' Stmt {
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::IF;
+    ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
+    ast->if_stmt = unique_ptr<StmtAST>((StmtAST*)$5);
+    $$ = ast;
+  } | IF '(' Exp ')' Stmt ELSE Stmt {
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::IF;
+    ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
+    ast->if_stmt = unique_ptr<StmtAST>((StmtAST*)$5);
+    ast->else_stmt = unique_ptr<StmtAST>((StmtAST*)$7);
+    $$ = ast;
+  }
+  ;
+
 Exp
   : LOrExp {
     // std::cout<<"LOrExp"<<std::endl;
