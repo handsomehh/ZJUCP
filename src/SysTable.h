@@ -199,6 +199,7 @@ class SymbolTable{
         }
     }
 
+    // 获取符号表中某个变量的类型
     Symbol::TYPE Get_type(const std::string &name){
         if(!is_exist(name)){
             return Symbol::UNKNOWN;
@@ -269,11 +270,12 @@ public:
 
 
 
-    // 向符号表栈（最顶端的符号表）插入一个变量
+    // 向符号表栈（最顶端的符号表）插入一个变量，带初始值
     int insert(const std::string &name, const std::string &ir_name, int value, SymbolTable::TYPE mode){
         return symbol_table_stack.back()->insert(name, ir_name, value, mode);
     }
 
+    // 向符号表栈（最顶端的符号表）插入一个变量，不带初始值
     int insert(const std::string &name, const std::string &ir_name, SymbolTable::TYPE mode){
         return symbol_table_stack.back()->insert(name, ir_name, mode);
     }

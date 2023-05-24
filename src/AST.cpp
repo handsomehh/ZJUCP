@@ -240,6 +240,31 @@ std::string StmtAST::Dump()const {
         ctrl = true;
         ks.label(end_label);
     }
+    else if (tag == StmtAST::WHILE){
+        std::string while_entry_label = symbol_tb_stack.Get_label_name(ks.while_entry_label);
+        std::string while_body_label = symbol_tb_stack.Get_label_name(ks.while_body_label);
+        std::string end_label = symbol_tb_stack.Get_label_name(ks.end_label);
+
+        ks.appendaddtab("jump " + while_entry_label + '\n');
+        ks.label(while_entry_label);
+
+        std::cout << "WHILE (";
+        std::string s = exp->Dump();
+        ks.appendaddtab("br " + s + ", " + while_body_label + ", " + end_label + '\n');
+        std::cout << ") {";
+
+        ks.label(while_body_label);
+        if (while_stmt){
+            while_stmt->Dump();
+            ks.appendaddtab("jump " + while_entry_label + '\n');
+        }
+        else {
+            std::cout << "while_stmt = null" << endl;
+        }
+        
+        ks.label(end_label);
+        std::cout << "}";
+    }
     // exp->Dump();
     std::cout << " }";
     return res;
@@ -531,7 +556,7 @@ std::string PrimaryExpAST::Dump()const {
         if(symbol_tb_stack.Get_type(lval->ident) == SymbolTable::INT){
             std::string temp = symbol_tb_stack.Get_ir_name(lval->ident);
             std::string temp2 = symbol_tb_stack.Get_count();
-            ks.appendaddtab(temp2+" = "+"load "+temp);
+            ks.appendaddtab(temp2+" = "+"load "+ temp + '\n');
             return temp2;
         }else if(symbol_tb_stack.Get_type(lval->ident) == SymbolTable::CONST){
             return std::to_string(symbol_tb_stack.Get_value(lval->ident));

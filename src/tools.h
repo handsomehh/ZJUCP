@@ -14,6 +14,8 @@ public:
     std::string if_label = std::string("%") + "then";
     std::string else_label = std::string("%") + "else";
     std::string end_label = std::string("%") + "end";
+    std::string while_entry_label = std::string("%") + "while_entry";
+    std::string while_body_label = std::string("%") + "while_body";
 
     void append(const std::string &s){
         koopa_str += s;
