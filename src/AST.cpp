@@ -11,12 +11,24 @@
 #include <string.h>
 
 using namespace std;
+
+/*
+    生成的koopa IR字符串
+*/
 KoopaString ks;
+
+/*
+    符号表栈
+*/
 SymbolTableStack symbol_tb_stack;
 
-/* ctrl: 严格来说，叫 is_jump_flag
-   这玩意的功能在于，判断当前的IR代码块是否以跳转指令结尾
+/* ctrl: 严格来说，叫 is_need_to_add_jump_flag
+   这玩意的功能在于，判断当前的IR代码块是否已经有跳转指令结尾
    如果不是以跳转指令结尾，我们要手动加一个jump语句
+   用在if、while语句中
+   例如： if (a > 1) { return 1 } else {return 0}
+         那么在koopa IR的%then和%else语句块后面我们就不会增加 jump %end 指令，因为已经有 ret 作为跳转指令了
+   在具体的实现中，每进入一个新的语句块（即一个新的label），我们就将ctrl置为1；当该语句块中出现ret、break等指令时，将其置0
 */
 bool ctrl;
 
@@ -90,9 +102,8 @@ void VarDefAST::Dump()const {
     ks.appendaddtab(ir_name + ks.alloc32i);
     symbol_tb_stack.insert(ident, ir_name, SymbolTable::INT);
     if(init_val){
-        int value = init_val->Get_value();
-        ks.appendaddtab("store " + std::to_string(value) + ", " + ir_name + '\n');
-        symbol_tb_stack.Update(ident,value);  
+        std::string res = init_val->exp->Dump();
+        ks.appendaddtab("store " + res + ", " + ir_name + '\n'); 
     }
 
     cout << " }";
@@ -186,15 +197,13 @@ std::string StmtAST::Dump()const {
         ctrl = false;
     }
     else if (tag == StmtAST::ASSIGN){
-        int res_int = exp->Get_value();
-        string to = lval->ident;
-        cout << "ASSIGN " << res_int << " to " << to;
+        std::string res = exp->Dump(); // 右表达式结果
+        std::string to = lval->ident; // 目标变量
+        cout << "ASSIGN";
         int tb_id = symbol_tb_stack.is_exist(to);
         if(tb_id > 0){
             std::string ir_name;
-            ks.appendaddtab("store " + std::to_string(res_int) + ", " + symbol_tb_stack.Get_ir_name(to) + '\n');
-            symbol_tb_stack.Update(to,res_int);
-            res = std::to_string(res_int);
+            ks.appendaddtab("store " + res + ", " + symbol_tb_stack.Get_ir_name(to) + '\n');
         }else{
             cout << "assgin to a undeclear var: " << to;
         }
@@ -202,7 +211,7 @@ std::string StmtAST::Dump()const {
     }
     else if (tag == StmtAST::EXP){
         if (exp){
-            cout << "EXP_NULL" ;
+            cout << "Expression_NULL" ;
             res = exp->Dump();
         }
     }
@@ -248,6 +257,7 @@ std::string StmtAST::Dump()const {
         ks.appendaddtab("jump " + while_entry_label + '\n');
         ks.label(while_entry_label);
 
+        ctrl = true;
         std::cout << "WHILE (";
         std::string s = exp->Dump();
         ks.appendaddtab("br " + s + ", " + while_body_label + ", " + end_label + '\n');
@@ -255,13 +265,16 @@ std::string StmtAST::Dump()const {
 
         ks.label(while_body_label);
         if (while_stmt){
+            ctrl = true;
             while_stmt->Dump();
-            ks.appendaddtab("jump " + while_entry_label + '\n');
+            if (ctrl)
+                ks.appendaddtab("jump " + while_entry_label + '\n');
         }
         else {
             std::cout << "while_stmt = null" << endl;
         }
         
+        ctrl = true;
         ks.label(end_label);
         std::cout << "}";
     }
@@ -578,4 +591,3 @@ int PrimaryExpAST::Get_value(){
 int ConstExpAST::Get_value(){
     return exp->Get_value();
 }
-

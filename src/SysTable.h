@@ -97,7 +97,7 @@ class ConstInt{
 class Symbol{
     public:
         std::string ir_name; // 表示该symbol在IR中的名称，例如变量a，在IR中的名称可以是@a1, @a2...
-        std::variant<IntVar, ConstInt> value; // 表示该symbol的值
+        std::variant<IntVar, ConstInt> value; // 表示该symbol的值, 不过主要受const有用， variables的值还是要运行时确定
         enum TYPE {INT,CONST,UNKNOWN}; // 表示该symbol的类型
         TYPE tag;
         Symbol(std::string ir_name_, int value_, TYPE tag_){
