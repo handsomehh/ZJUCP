@@ -41,60 +41,77 @@ public:
     }
 };
 
-class KoopaString{
+class KoopaString
+{
 private:
     std::string koopa_str;
-    
+
 public:
     std::string alloc32i = " = alloc i32\n";
+    std::string alloc32i_g = " = alloc i32, ";
+    std::string zero = "zeroinit";
     std::string if_label = std::string("%") + "then";
     std::string else_label = std::string("%") + "else";
     std::string end_label = std::string("%") + "end";
     std::string while_entry_label = std::string("%") + "while_entry";
     std::string while_body_label = std::string("%") + "while_body";
-
-    void append(const std::string &s){
+    std::string head_func_decal = "decl @getint(): i32\ndecl @getch(): i32\ndecl @getarray(*i32): i32\ndecl @putint(i32)\ndecl @putch(i32)\ndecl @putarray(i32, *i32)\ndecl @starttime()\ndecl @stoptime()\n\n";
+    void func_decl()
+    {
+        koopa_str += head_func_decal;
+    }
+    void append(const std::string &s)
+    {
         koopa_str += s;
     }
-    void appendaddtab(const std::string &s){
-        koopa_str+= "  "+s;
+    void appendaddtab(const std::string &s)
+    {
+        koopa_str += "  " + s;
     }
-    void label(const std::string &s){
+    void label(const std::string &s)
+    {
         koopa_str += s + ":\n";
     }
 
-    void ret(const std::string &name){
-        koopa_str +="  ret " + name + "\n";
+    void ret(const std::string &name)
+    {
+        koopa_str += "  ret " + name + "\n";
     }
 
-    void logic(const std::string &res,const std::string &src1,const std::string &src2,const std::string &op){
-        koopa_str +="  "+ res + " = " + op + " " + src1 + ", " + src2 + "\n";
+    void logic(const std::string &res, const std::string &src1, const std::string &src2, const std::string &op)
+    {
+        koopa_str += "  " + res + " = " + op + " " + src1 + ", " + src2 + "\n";
     }
 
-    const char * c_str(){return koopa_str.c_str();}
+    const char *c_str() { return koopa_str.c_str(); }
 };
 
-
-class RiscvString{
+class RiscvString
+{
 private:
     std::string riscv_str;
+
 public:
-    void append(const std::string &s){
+    void append(const std::string &s)
+    {
         riscv_str += s;
     }
-    void ret(){
+    void ret()
+    {
         riscv_str += "  ret\n";
     }
-    void li(const std::string &to, int im){
+    void li(const std::string &to, int im)
+    {
         riscv_str += "  li    " + to + ", " + std::to_string(im) + "\n";
     }
 
-    void label(const std::string &name){
+    void label(const std::string &name)
+    {
         this->append(name + ":\n");
     }
-    
-    std::string Get_result(){
+
+    std::string Get_result()
+    {
         return riscv_str;
     }
-
 };

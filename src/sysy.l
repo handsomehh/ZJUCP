@@ -41,6 +41,8 @@ Hexadecimal   0[xX][0-9a-fA-F]+
 "while"         { return WHILE; }
 "break"         { return BREAK; }
 "continue"      { return CONTINUE; }
+"void"          { return VOID; }
+
 
 "<="            { return LEQ; }
 ">="            { return BGE; }

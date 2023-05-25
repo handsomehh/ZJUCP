@@ -3,11 +3,18 @@
 #include <memory>
 #include <vector>
 using namespace std;
-
-
+// 所有类的声明
+class BaseAST;
+class CompUnitAST;
+class FuncDefAST;
+class FuncTypeAST;
+class BlockAST;
+class StmtAST;
+class FuncFParamsAST;
+class FuncFParamAST;
+class FuncRParamsAST;
 /*
-
-CompUnit      ::= FuncDef;
+CompUnit      ::= [CompUnit] (Decl | FuncDef);
 
 Decl          ::= ConstDecl | VarDecl;
 ConstDecl     ::= "const" BType ConstDef {"," ConstDef} ";";
@@ -18,8 +25,10 @@ VarDecl       ::= BType VarDef {"," VarDef} ";";
 VarDef        ::= IDENT | IDENT "=" InitVal;
 InitVal       ::= Exp;
 
-FuncDef       ::= FuncType IDENT "(" ")" Block;
-FuncType      ::= "int";
+FuncDef       ::= FuncType IDENT "(" [FuncFParams] ")" Block;
+FuncType      ::= "void" | "int";
+FuncFParams   ::= FuncFParam {"," FuncFParam};
+FuncFParam    ::= BType IDENT;
 
 Block         ::= "{" {BlockItem} "}";
 BlockItem     ::= Decl | Stmt;
@@ -36,8 +45,9 @@ Exp           ::= LOrExp;
 LVal          ::= IDENT;
 PrimaryExp    ::= "(" Exp ")" | LVal | Number;
 Number        ::= INT_CONST;
-UnaryExp      ::= PrimaryExp | UnaryOp UnaryExp;
+UnaryExp      ::= PrimaryExp | IDENT "(" [FuncRParams] ")" | UnaryOp UnaryExp;
 UnaryOp       ::= "+" | "-" | "!";
+FuncRParams   ::= Exp {"," Exp};
 MulExp        ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
 AddExp        ::= MulExp | AddExp ("+" | "-") MulExp;
 RelExp        ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
@@ -80,53 +90,85 @@ class BlockItemAST;
 class LValAST;
 class ConstExpAST;
 
-
-
-class BaseAST {
- public:
-  virtual ~BaseAST() = default;
-  // virtual std::string Dump()const = 0;
+class BaseAST
+{
+public:
+    virtual ~BaseAST() = default;
+    // virtual std::string Dump()const = 0;
 };
 
 // CompUnit 是 BaseAST
-class CompUnitAST : public BaseAST {
- public:
-  // 用智能指针管理对象
-  std::unique_ptr<FuncDefAST> func_def;
-  void Dump() const;
+class CompUnitAST : public BaseAST
+{
+public:
+    // 用智能指针管理对象
+    std::vector<std::unique_ptr<FuncDefAST>> func_defs;
+    std::vector<std::unique_ptr<DeclAST>> decls;
+    void Dump() const;
 };
 
 // FuncDef 也是 BaseAST
-class FuncDefAST : public BaseAST {
- public:
-  std::unique_ptr<FuncTypeAST> func_type;
-  std::string ident;
-  std::unique_ptr<BlockAST> block;
-  void Dump() const;
+class FuncDefAST : public BaseAST
+{
+public:
+    // std::unique_ptr<BTypeAST> btype;
+    std::unique_ptr<FuncFParamsAST> params;
+
+    std::unique_ptr<BTypeAST> func_type;
+    std::string ident;
+    std::unique_ptr<BlockAST> block;
+    void Dump() const;
 };
 
-class FuncTypeAST : public BaseAST {
- public:
-    enum TAG {INT};
+class FuncFParamsAST : public BaseAST
+{
+public:
+    std::vector<std::unique_ptr<FuncFParamAST>> params;
+    void Dump() const;
+};
+
+class FuncFParamAST : public BaseAST
+{
+public:
+    std::unique_ptr<BTypeAST> btype;
+    std::string ident;
+    std::string Dump() const;
+};
+
+class FuncTypeAST : public BaseAST
+{
+public:
+    enum TAG
+    {
+        INT,
+        VOID
+    };
     TAG tag;
     void Dump() const;
 };
 
-class BlockAST : public BaseAST {
- public:
+class BlockAST : public BaseAST
+{
+public:
     std::vector<std::unique_ptr<BlockItemAST>> blockitem;
     std::string Dump() const;
 };
-class BlockItemAST : public BaseAST {
+class BlockItemAST : public BaseAST
+{
 public:
-    enum TYPE {DECL, STMT};
+    enum TYPE
+    {
+        DECL,
+        STMT
+    };
     TYPE tag;
     std::unique_ptr<DeclAST> decl;
     std::unique_ptr<StmtAST> stmt;
     std::string Dump() const;
 };
-class StmtAST : public BaseAST {
- public:
+class StmtAST : public BaseAST
+{
+public:
     // int number;
     enum TYPE {RETURN, ASSIGN, EXP, BLOCK, IF, WHILE, BREAK, CONTINUE};
     TYPE tag;
@@ -139,46 +181,62 @@ class StmtAST : public BaseAST {
     std::string Dump() const;
 };
 
-class ExpAST : public BaseAST {
+class ExpAST : public BaseAST
+{
 public:
     std::unique_ptr<LOrExpAST> l_or_exp;
     std::string Dump() const;
     int Get_value();
 };
 
-class LOrExpAST : public BaseAST {
+class LOrExpAST : public BaseAST
+{
 public:
-    enum TYPE {AND,OR_AND};
+    enum TYPE
+    {
+        AND,
+        OR_AND
+    };
     TYPE tag;
-    //or -> and
+    // or -> and
     std::unique_ptr<LAndExpAST> l_and_exp;
-    //or -> or || and
+    // or -> or || and
     std::unique_ptr<LOrExpAST> l_or_exp2;
     std::unique_ptr<LAndExpAST> l_and_exp2;
     std::string Dump() const;
     int Get_value();
 };
 
-class LAndExpAST : public BaseAST {
+class LAndExpAST : public BaseAST
+{
 public:
-    enum TYPE {EQ, EQ_AND};
+    enum TYPE
+    {
+        EQ,
+        EQ_AND
+    };
     TYPE tag;
-    //and->eq
+    // and->eq
     std::unique_ptr<EqExpAST> eq_exp;
-    //and -> eq && and
+    // and -> eq && and
     std::unique_ptr<LAndExpAST> l_and_exp2;
     std::unique_ptr<EqExpAST> eq_exp2;
     std::string Dump() const;
     int Get_value();
 };
 
-class EqExpAST : public BaseAST {
+class EqExpAST : public BaseAST
+{
 public:
-    enum TYPE {REL,EQ_REL};
+    enum TYPE
+    {
+        REL,
+        EQ_REL
+    };
     TYPE tag;
-    //eq->rel
+    // eq->rel
     std::unique_ptr<RelExpAST> rel_exp;
-    //rq->rel eq
+    // rq->rel eq
     std::unique_ptr<EqExpAST> eq_exp2;
     std::unique_ptr<RelExpAST> rel_exp2;
     char op;
@@ -186,23 +244,33 @@ public:
     int Get_value();
 };
 
-class RelExpAST : public BaseAST {
+class RelExpAST : public BaseAST
+{
 public:
-    enum TYPE {ADD, REL_ADD};
+    enum TYPE
+    {
+        ADD,
+        REL_ADD
+    };
     TYPE tag;
-    //rel->add
+    // rel->add
     std::unique_ptr<AddExpAST> add_exp;
-    //rel->rel add
+    // rel->rel add
     std::unique_ptr<RelExpAST> rel_exp2;
     std::unique_ptr<AddExpAST> add_exp2;
-    char op[3];     // <,>,<=,>=
+    char op[3]; // <,>,<=,>=
     std::string Dump() const;
     int Get_value();
 };
 
-class AddExpAST : public BaseAST {
+class AddExpAST : public BaseAST
+{
 public:
-    enum TYPE {MUL, ADD_MUL};
+    enum TYPE
+    {
+        MUL,
+        ADD_MUL
+    };
     TYPE tag;
     std::unique_ptr<MulExpAST> mul_exp;
 
@@ -213,9 +281,14 @@ public:
     int Get_value();
 };
 
-class MulExpAST : public BaseAST {
+class MulExpAST : public BaseAST
+{
 public:
-    enum TYPE {UNARY, MUL_UNARY};
+    enum TYPE
+    {
+        UNARY,
+        MUL_UNARY
+    };
     TYPE tag;
 
     std::unique_ptr<UnaryExpAST> unary_exp;
@@ -227,96 +300,136 @@ public:
     int Get_value();
 };
 
-class UnaryExpAST : public BaseAST {
+class UnaryExpAST : public BaseAST
+{
 public:
-    enum TYPE { PRIMARY, UNARY};
+    enum TYPE
+    {
+        PRIMARY,
+        UNARY,
+        FUN
+    };
     TYPE tag;
 
     std::unique_ptr<PrimaryExpAST> primary_exp;
 
     char op;
     std::unique_ptr<UnaryExpAST> unary_exp;
+    std::unique_ptr<FuncRParamsAST> func_params;
+    std::string ident;
 
     std::string Dump() const;
     int Get_value();
 };
 
-class PrimaryExpAST : public BaseAST {
+class PrimaryExpAST : public BaseAST
+{
 public:
-    enum TYPE {EXP , NUMBER, LVAL};
+    enum TYPE
+    {
+        EXP,
+        NUMBER,
+        LVAL
+    };
     TYPE tag;
     std::unique_ptr<ExpAST> exp;
     std::unique_ptr<LValAST> lval;
     int number;
-    std::string Dump() const ;
+    std::string Dump() const;
     int Get_value();
 };
 
 class DeclAST : public BaseAST {
 public:
-    enum TYPE {CONST, VAR};
+    enum TYPE
+    {
+        CONST,
+        VAR
+    };
     TYPE tag;
     std::unique_ptr<ConstDeclAST> const_decl;
     std::unique_ptr<VarDeclAST> var_decl;
     void Dump() const;
+    void Dump_Global() const;
 };
 
-class ConstDeclAST : public BaseAST {
+class ConstDeclAST : public BaseAST
+{
 public:
     std::unique_ptr<BTypeAST> btype;
     std::vector<std::unique_ptr<ConstDefAST>> const_defs;
     void Dump() const;
+    void Dump_Global() const;
 };
 
-class VarDeclAST : public BaseAST {
+class VarDeclAST : public BaseAST
+{
 public:
     std::unique_ptr<BTypeAST> btype;
     std::vector<std::unique_ptr<VarDefAST>> var_defs;
     void Dump() const;
+    void Dump_Global() const;
 };
 
-class BTypeAST : public BaseAST {
+class BTypeAST : public BaseAST
+{
 public:
-    enum TAG {INT};
+    enum TAG
+    {
+        INT,
+        VOID
+    };
     TAG tag;
     void Dump() const;
 };
 
-class ConstDefAST : public BaseAST {
+class ConstDefAST : public BaseAST
+{
 public:
     std::string ident;
     std::unique_ptr<ConstInitValAST> const_init_val;
     void Dump() const;
+    void Dump_Global() const;
 };
 
-class VarDefAST: public BaseAST {
+class VarDefAST : public BaseAST
+{
 public:
     std::string ident;
     std::unique_ptr<InitValAST> init_val;
     void Dump() const;
+    void Dump_Global() const;
 };
 
-
-class InitValAST : public BaseAST{
+class InitValAST : public BaseAST
+{
 public:
     std::unique_ptr<ExpAST> exp;
     int Get_value();
 };
 
-class ConstInitValAST : public BaseAST {
+class ConstInitValAST : public BaseAST
+{
 public:
     std::unique_ptr<ConstExpAST> const_exp;
     int Dump() const;
 };
 
-
-class LValAST : public BaseAST {
+class LValAST : public BaseAST
+{
 public:
     std::string ident;
 };
 
-class ConstExpAST : public BaseAST {
+class ConstExpAST : public BaseAST
+{
 public:
     std::unique_ptr<ExpAST> exp;
     int Get_value();
+};
+class FuncRParamsAST : public BaseAST
+{
+public:
+    std::vector<std::unique_ptr<ExpAST>> exps;
+    std::string Dump() const;
 };
