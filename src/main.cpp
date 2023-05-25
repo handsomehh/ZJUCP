@@ -11,7 +11,7 @@
 extern FILE *yyin;
 extern int yyparse(unique_ptr<BaseAST> &ast);
 extern KoopaString ks;
-extern RiscvString rvs;
+extern string RiscvString;
 
 using namespace std;
 
@@ -80,7 +80,7 @@ int main(int argc, const char *argv[])
 
   if (std::string(mode) == "-riscv")
   {
-    ofs << rvs.Get_result();
+    ofs << RiscvString;
   }
 
   ofs.close();
@@ -93,7 +93,7 @@ int main(int argc, const char *argv[])
   fout2 << str << endl;
   fout2.close();
   ofstream fout3("./myout_riscv.txt", ios::app);
-  fout2 << rvs.Get_result() << endl;
+  fout2 << RiscvString << endl;
   fout2.close();
   return 0;
 }
