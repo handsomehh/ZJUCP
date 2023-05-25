@@ -44,7 +44,7 @@ using namespace std;
 // lexer 返回的所有 token 种类的声明
 // 注意 IDENT 和 INT_CONST 会返回 token 的值, 分别对应 str_val 和 int_val
 
-%token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE
+%token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE BREAK CONTINUE
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
 %type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom
@@ -368,6 +368,18 @@ Stmt
     ast->tag = StmtAST::WHILE;
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
     ast->while_stmt = unique_ptr<StmtAST>((StmtAST*)$5);
+    $$ = ast;
+  }
+  ;
+
+Stmt
+  : BREAK {
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::BREAK;
+    $$ = ast;
+  } | CONTINUE {
+    auto ast = new StmtAST();
+    ast->tag = StmtAST::CONTINUE;
     $$ = ast;
   }
   ;

@@ -3,42 +3,10 @@
 #include <memory>
 #include <vector>
 using namespace std;
-// 所有类的声明
-class BaseAST; 
-class CompUnitAST;
-class FuncDefAST;
-class FuncTypeAST;
-class BlockAST;
-class StmtAST;
-/*
-Stmt        ::= "return" Exp ";";
 
-
-Exp         ::= LOrExp ;
-PrimaryExp  ::= "(" Exp ")" | Number;
-Number      ::= INT_CONST;
-UnaryExp    ::= PrimaryExp | UnaryOp UnaryExp;
-UnaryOp     ::= "+" | "-" | "!";
-MulExp      ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
-AddExp      ::= MulExp | AddExp ("+" | "-") MulExp;
-RelExp      ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
-EqExp       ::= RelExp | EqExp ("==" | "!=") RelExp;
-LAndExp     ::= EqExp | LAndExp "&&" EqExp;
-LOrExp      ::= LAndExp | LOrExp "||" LAndExp;
-Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp 
-AddExp RelExp EqExp LAndExp LOrExp
-*/
-class ExpAST;
-class PrimaryExpAST;
-class UnaryExpAST;
-class MulExpAST;
-class AddExpAST;
-class RelExpAST;
-class EqExpAST;
-class LAndExpAST;
-class LOrExpAST;
 
 /*
+
 CompUnit      ::= FuncDef;
 
 Decl          ::= ConstDecl | VarDecl;
@@ -56,7 +24,13 @@ FuncType      ::= "int";
 Block         ::= "{" {BlockItem} "}";
 BlockItem     ::= Decl | Stmt;
 Stmt          ::= LVal "=" Exp ";"
-                | "return" Exp ";";
+                | [Exp] ";"
+                | Block
+                | "if" "(" Exp ")" Stmt ["else" Stmt]
+                | "while" "(" Exp ")" Stmt
+                | "break" ";"
+                | "continue" ";"
+                | "return" [Exp] ";";
 
 Exp           ::= LOrExp;
 LVal          ::= IDENT;
@@ -71,7 +45,28 @@ EqExp         ::= RelExp | EqExp ("==" | "!=") RelExp;
 LAndExp       ::= EqExp | LAndExp "&&" EqExp;
 LOrExp        ::= LAndExp | LOrExp "||" LAndExp;
 ConstExp      ::= Exp;
+
 */
+
+
+// 所有类的声明
+class BaseAST; 
+class CompUnitAST;
+class FuncDefAST;
+class FuncTypeAST;
+class BlockAST;
+class StmtAST;
+
+class ExpAST;
+class PrimaryExpAST;
+class UnaryExpAST;
+class MulExpAST;
+class AddExpAST;
+class RelExpAST;
+class EqExpAST;
+class LAndExpAST;
+class LOrExpAST;
+
 class DeclAST;
 class ConstDeclAST;
 class BTypeAST;
@@ -133,7 +128,7 @@ public:
 class StmtAST : public BaseAST {
  public:
     // int number;
-    enum TYPE {RETURN, ASSIGN, EXP, BLOCK, IF, WHILE};
+    enum TYPE {RETURN, ASSIGN, EXP, BLOCK, IF, WHILE, BREAK, CONTINUE};
     TYPE tag;
     std::unique_ptr<ExpAST> exp;
     std::unique_ptr<LValAST> lval;
@@ -256,21 +251,6 @@ public:
     std::string Dump() const ;
     int Get_value();
 };
-/*
-class DeclAST;
-class ConstDeclAST;
-class BTypeAST;
-class ConstDefAST;
-class ConstInitValAST;
-class VarDeclAST;
-class VarDefAST;
-class InitValAST;
-class BlockItemAST;
-
-class LValAST;
-class ConstExpAST;
-*/
-
 
 class DeclAST : public BaseAST {
 public:

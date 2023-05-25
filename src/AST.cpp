@@ -32,6 +32,8 @@ SymbolTableStack symbol_tb_stack;
 */
 bool ctrl;
 
+While_Stack while_stack;
+
 void CompUnitAST::Dump()const {
     std::cout << "CompUnitAST { ";
     func_def->Dump();
@@ -160,7 +162,7 @@ std::string BlockAST::Dump()const {
         res = i->Dump();
         // 在一个block中，如果出现了Return语句，那么该block后面的代码均可忽略，即该block可以提前结束
         if(i->tag == BlockItemAST::STMT){
-            if(i->stmt->tag == StmtAST::RETURN){
+            if(i->stmt->tag == StmtAST::RETURN || i->stmt->tag == StmtAST::BREAK || i->stmt->tag == StmtAST::CONTINUE){
                 symbol_tb_stack.quit();
                 return res;
             }
@@ -254,6 +256,11 @@ std::string StmtAST::Dump()const {
         std::string while_body_label = symbol_tb_stack.Get_label_name(ks.while_body_label);
         std::string end_label = symbol_tb_stack.Get_label_name(ks.end_label);
 
+        std::unique_ptr<While_Struct> while_stuct = 
+            std::make_unique<While_Struct>(While_Struct(while_entry_label, while_body_label, end_label));
+
+        while_stack.insert(while_stuct);
+
         ks.appendaddtab("jump " + while_entry_label + '\n');
         ks.label(while_entry_label);
 
@@ -276,8 +283,21 @@ std::string StmtAST::Dump()const {
         
         ctrl = true;
         ks.label(end_label);
+
+        while_stack.pop();
         std::cout << "}";
     }
+    else if (tag == StmtAST::BREAK){
+        std::string end_name = while_stack.Get_end_name();
+        ks.appendaddtab("jump " + end_name + '\n');
+        ctrl = false;
+    }
+    else if (tag == StmtAST::CONTINUE){
+        std::string entry_name = while_stack.Get_entry_name();
+        ks.appendaddtab("jump " + entry_name + '\n');
+        ctrl = false;
+    }
+
     // exp->Dump();
     std::cout << " }";
     return res;
