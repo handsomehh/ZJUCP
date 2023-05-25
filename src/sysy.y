@@ -44,52 +44,14 @@ using namespace std;
 // lexer 返回的所有 token 种类的声明
 // 注意 IDENT 和 INT_CONST 会返回 token 的值, 分别对应 str_val 和 int_val
 
-%token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE BREAK CONTINUE
+%token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE BREAK CONTINUE VOID
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
 %type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams
 %type <int_val> Number
 %type <char_val> UnaryOp MULOp AddOp
 %%
-/*
-当前语法支持：
-CompUnit      ::= FuncDef;
 
-Decl          ::= ConstDecl | VarDecl;
-ConstDecl     ::= "const" BType ConstDef {"," ConstDef} ";";
-BType         ::= "int";
-ConstDef      ::= IDENT "=" ConstInitVal;
-ConstInitVal  ::= ConstExp;
-VarDecl       ::= BType VarDef {"," VarDef} ";";
-VarDef        ::= IDENT | IDENT "=" InitVal;
-InitVal       ::= Exp;
-
-FuncDef       ::= FuncType IDENT "(" ")" Block;
-FuncType      ::= "int";
-
-Block         ::= "{" {BlockItem} "}";
-BlockItem     ::= Decl | Stmt;
-Stmt          ::= LVal "=" Exp ";"
-                | [Exp] ";"
-                | Block
-                | "return" [Exp] ";";
-
-Exp           ::= LOrExp;
-LVal          ::= IDENT;
-PrimaryExp    ::= "(" Exp ")" | LVal | Number;
-Number        ::= INT_CONST;
-UnaryExp      ::= PrimaryExp | UnaryOp UnaryExp;
-UnaryOp       ::= "+" | "-" | "!";
-MulExp        ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
-AddExp        ::= MulExp | AddExp ("+" | "-") MulExp;
-RelExp        ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
-EqExp         ::= RelExp | EqExp ("==" | "!=") RelExp;
-LAndExp       ::= EqExp | LAndExp "&&" EqExp;
-LOrExp        ::= LAndExp | LOrExp "||" LAndExp;
-ConstExp      ::= Exp;
-
-
-*/
 
 // 开始符, CompUnit ::= FuncDef, 大括号后声明了解析完成后 parser 要做的事情
 // 之前我们定义了 FuncDef 会返回一个 str_val, 也就是字符串指针
