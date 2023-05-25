@@ -44,10 +44,10 @@ using namespace std;
 // lexer 返回的所有 token 种类的声明
 // 注意 IDENT 和 INT_CONST 会返回 token 的值, 分别对应 str_val 和 int_val
 
-%token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE
+%token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE VOID
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
-%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom
+%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams
 %type <int_val> Number
 %type <char_val> UnaryOp MULOp AddOp
 %%
@@ -96,17 +96,51 @@ ConstExp      ::= Exp;
 // 而 parser 一旦解析完 CompUnit, 就说明所有的 token 都被解析了, 即解析结束了
 // 此时我们应该把 FuncDef 返回的结果收集起来, 作为 AST 传给调用 parser 的函数
 // $1 指代规则里第一个符号的返回值, 也就是 FuncDef 的返回值
-
-CompUnit
-  : FuncDef {
-    auto comp_unit = make_unique<CompUnitAST>();
-    comp_unit->func_def = unique_ptr<FuncDefAST>((FuncDefAST*)$1);
-    assert(comp_unit);
-    assert(comp_unit->func_def);
-    // comp_unit->Dump();
+CompUnit:
+  CompUnitList {
+    auto comp_unit = unique_ptr<CompUnitAST>((CompUnitAST *)$1);
     ast = move(comp_unit);
   }
   ;
+CompUnitList:
+  CompUnitList CompUnitAtom{
+
+    auto comp_unit = (CompUnitAST*)$1;
+    auto rec = unique_ptr<CompUnitAST>((CompUnitAST*)$2);
+    
+    for (auto &i : rec->func_defs){
+      comp_unit->func_defs.push_back(std::move(i));
+    }
+    for (auto &i : rec->decls){
+      comp_unit->decls.push_back(std::move(i));
+    }
+    rec->func_defs.clear();
+    rec->decls.clear();
+    $$ = comp_unit;
+
+  } | CompUnitAtom {
+
+    $$ = $1;
+
+  }
+  ;
+
+CompUnitAtom
+  : FuncDef {
+
+    auto comp_unit = new CompUnitAST();
+    comp_unit->func_defs.push_back(unique_ptr<FuncDefAST>((FuncDefAST*)$1));
+    // comp_unit->Dump();
+    $$ = comp_unit;
+
+  } | Decl {
+    auto comp_unit = new CompUnitAST();
+    comp_unit->decls.push_back(unique_ptr<DeclAST>((DeclAST*)$1));
+    // comp_unit->Dump();
+    $$ = comp_unit;
+  }
+  ;
+
 Decl 
   : ConstDecl {
 
@@ -139,7 +173,12 @@ BType
   : INT {
     auto ast = new BTypeAST();
     ast->tag = BTypeAST::INT;
-    std::cout<<"Btype";
+    std::cout<<"Btype INT";
+    $$ = ast;
+  } | VOID {
+    auto ast = new BTypeAST();
+    ast->tag = BTypeAST::VOID;
+    std::cout<<"Btype VOID";
     $$ = ast;
   }
   ;
@@ -241,24 +280,59 @@ InitVal
   } 
   ;
 FuncDef
-  : FuncType IDENT '(' ')' Block {
+  : BType IDENT '(' ')' Block {
     auto ast = new FuncDefAST();
-    ast->func_type = unique_ptr<FuncTypeAST>((FuncTypeAST*)$1);
+    ast->func_type = unique_ptr<BTypeAST>((BTypeAST*)$1);
     ast->ident = *unique_ptr<string>($2);
     ast->block = unique_ptr<BlockAST>((BlockAST*)$5);
+    $$ = ast;
+  } | BType IDENT '(' FuncFParams ')' Block {
+    auto ast = new FuncDefAST();
+    ast->func_type = unique_ptr<BTypeAST>((BTypeAST*)$1);
+    ast->ident = *unique_ptr<string>($2);
+    ast->block = unique_ptr<BlockAST>((BlockAST*)$6);
+    ast->params = unique_ptr<FuncFParamsAST>((FuncFParamsAST*)$4);
+    $$ = ast;
+  }
+  ;
+FuncFParams
+  : FuncFParam {
+    auto ast = new FuncFParamsAST();
+    ast->params.push_back(unique_ptr<FuncFParamAST>((FuncFParamAST*)$1));
+    $$ = ast;
+  } | FuncFParam ',' FuncFParams {
+    auto ast = new FuncFParamsAST();
+    ast->params.push_back(unique_ptr<FuncFParamAST>((FuncFParamAST*)$1));
+    
+    auto rec = unique_ptr<FuncFParamsAST>((FuncFParamsAST *)$3);
+    for(auto &i : rec->params){
+      ast->params.push_back(std::move(i));
+    }
+    rec->params.clear();
     $$ = ast;
   }
   ;
 
-// 同上, 不再解释
-FuncType
-  : INT {
-    auto ast = new FuncTypeAST();
-    ast->tag = FuncTypeAST::INT;
-    std::cout<<"4";
+FuncFParam
+  : BType IDENT {
+    auto ast = new FuncFParamAST();
+    ast->btype = unique_ptr<BTypeAST>((BTypeAST *)$1);
+    ast->ident = *unique_ptr<string>($2);
     $$ = ast;
   }
   ;
+// 同上, 不再解释
+/* FuncType
+  : INT {
+    auto ast = new FuncTypeAST();
+    ast->tag = FuncTypeAST::INT;
+    $$ = ast;
+  } | VOID {
+    auto ast = new FuncTypeAST();
+    ast->tag = FuncTypeAST::VOID;
+    $$ = ast;
+  }
+  ; */
 
 Block
   : '{' BlockItem '}' {
@@ -342,11 +416,7 @@ Stmt
     ast->tag = StmtAST::BLOCK;
     ast->block = unique_ptr<BlockAST>((BlockAST*)$1);
     $$ = ast;
-  }
-  ;
-
-Stmt
-  : IF '(' Exp ')' Stmt {
+  } | IF '(' Exp ')' Stmt {
     auto ast = new StmtAST();
     ast->tag = StmtAST::IF;
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
@@ -359,11 +429,7 @@ Stmt
     ast->if_stmt = unique_ptr<StmtAST>((StmtAST*)$5);
     ast->else_stmt = unique_ptr<StmtAST>((StmtAST*)$7);
     $$ = ast;
-  }
-  ;
-
-Stmt
-  : WHILE '(' Exp ')' Stmt {
+  } | WHILE '(' Exp ')' Stmt {
     auto ast = new StmtAST();
     ast->tag = StmtAST::WHILE;
     ast->exp = unique_ptr<ExpAST>((ExpAST*)$3);
@@ -436,6 +502,21 @@ UnaryExp
     ast->unary_exp = unique_ptr<UnaryExpAST>((UnaryExpAST *)$2);
     $$ = ast;
 
+  }  | IDENT '(' ')' {
+
+    auto ast = new UnaryExpAST();
+    ast->tag = UnaryExpAST::FUN;
+    ast->ident = *unique_ptr<string>($1);
+    $$ = ast;
+
+  } | IDENT '(' FuncRParams ')' {
+
+    auto ast = new UnaryExpAST();
+    ast->tag = UnaryExpAST::FUN;
+    ast->ident = *unique_ptr<string>($1);
+    ast->func_params = unique_ptr<FuncRParamsAST>((FuncRParamsAST *)$3);
+    $$ = ast;
+
   }
   ;
 UnaryOp 
@@ -447,7 +528,30 @@ UnaryOp
     $$ = '!';
   }
   ;
+FuncRParams
+  : Exp {
 
+    auto ast = new FuncRParamsAST();
+    ast->exps.push_back(unique_ptr<ExpAST>((ExpAST *)$1));
+    $$ = ast;
+
+  } | Exp ',' FuncRParams {
+    
+    auto ast = new FuncRParamsAST();
+    ast->exps.push_back(unique_ptr<ExpAST>((ExpAST *)$1));
+    auto rec = unique_ptr<FuncRParamsAST>((FuncRParamsAST *)$3);
+
+    for(auto &i : rec->exps){
+
+      ast->exps.push_back(std::move(i));
+
+    }
+    rec->exps.clear();
+    
+    $$ = ast;
+
+  }
+  ;
 MulExp
   : UnaryExp{
 
