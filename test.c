@@ -1,10 +1,5 @@
-int half(int x) {
-  return x / 2;
-}
-
-void f() {}
 
 int main() {
-  f();
-  return half(10);
+  const int a[5] = {1, 2, 3, 4, 5};
+  return a[1];
 }

@@ -47,7 +47,7 @@ using namespace std;
 %token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE BREAK CONTINUE VOID
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
-%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams ArrayIndexList LvalArrayIndexList
+%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams ArrayIndexList LvalArrayIndexList ConstInitValList
 %type <int_val> Number
 %type <char_val> UnaryOp MULOp AddOp
 %%
@@ -271,7 +271,7 @@ VarDefAtom
     for (auto &i : p->const_exp_list){
         ast->const_exp_list.emplace_back(i.release());
       }
-    ast->init_val = unique_ptr<ConstInitValAST>((ConstInitValAST *)$4);
+    ast->init_val = unique_ptr<InitValAST>((InitValAST *)$4);
     $$ = ast;
   }
   ;

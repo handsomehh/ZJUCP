@@ -92,6 +92,37 @@ public:
         return type;
     }
 
+    // 数组内容在ptr所指的内存区域，数组类型由len描述. ptr[i]为常量，或者是KoopaIR中的名字
+    std::string getInitList(std::string *ptr, const std::vector<int> &len){
+        std::string ret = "{";
+        if(len.size() == 1){
+            int n = len[0];
+            ret += ptr[0];
+            for(int i = 1; i < n; ++i){
+                ret += ", " + ptr[i];
+            }
+        } else {
+            int n = len[0], width = 1;
+            std::vector<int> sublen(len.begin() + 1, len.end());
+            for(auto iter = len.end() - 1; iter != len.begin(); --iter)
+                width *= *iter;
+            ret += getInitList(ptr, sublen);
+            for(int i = 1; i < n; ++i){
+                ret += ", " + getInitList(ptr + width * i, sublen);
+            }
+        }
+        ret += "}";
+        return ret;
+    }
+
+    void getelemptr(const std::string& to, const std::string &from, const int i){
+        koopa_str += "  " + to + " = getelemptr " + from + ", " + std::to_string(i) + "\n";
+    }
+
+    void getelemptr(const std::string& to, const std::string &from, const std::string& i){
+        koopa_str += "  " + to + " = getelemptr " + from + ", " + i + "\n";
+    }
+
     const char *c_str() { return koopa_str.c_str(); }
 };
 

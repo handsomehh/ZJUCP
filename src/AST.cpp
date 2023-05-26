@@ -34,6 +34,53 @@ bool ctrl;
 
 While_Stack while_stack;
 
+
+/**
+ * 完成对Local数组初始化的IR生成
+ * @param name: 数组在Koopa IR中的名字 
+ * @param ptr: 指向数组的内容，例如{"1", "%2"}
+ * @param len: 描述数组类型，i.e. 各个维度的长
+*/
+void initArray(std::string name, std::string *ptr, const std::vector<int> &len){    
+    int n = len[0];
+    if(len.size() == 1){
+        for(int i = 0; i < n; ++i){
+            string tmp = symbol_tb_stack.Get_count();
+            ks.getelemptr(tmp, name, i);
+            ks.appendaddtab("store " + ptr[i] + ", " + tmp + '\n');
+        }
+    } else {
+        vector<int> sublen(len.begin() + 1, len.end());
+        int width = 1;
+        for(auto l : sublen)  width *= l;
+        for(int i = 0; i < n; ++i){
+            string tmp = symbol_tb_stack.Get_count();
+            ks.getelemptr(tmp, name, i);
+            initArray(tmp, ptr + i * width, sublen);
+        }
+    }
+}
+
+/**
+ * 返回数组中某个元素的指针
+ * @param name: 数组在Koopa IR中的名字 
+ * @param index: 元素在数组中的下标
+*/
+std::string getElemPtr(const std::string &name, const std::vector<std::string>& index){
+    if(index.size() == 1){
+        string tmp = symbol_tb_stack.Get_count();
+        ks.getelemptr(tmp, name, index[0]);
+        return tmp;
+    } else {
+        string tmp = symbol_tb_stack.Get_count();
+        ks.getelemptr(tmp, name, index[0]);
+        return getElemPtr(
+            tmp,
+            vector<string>(index.begin() + 1, index.end())
+        );
+    }
+}
+
 void CompUnitAST::Dump()const {
     std::cout << "CompUnitAST { ";
     ks.func_decl();
@@ -109,7 +156,7 @@ void ConstDeclAST::Dump_Global() const
 }
 void ConstDefAST::Dump() const
 {
-    std::cout << "ConstDefAST { def:" << ident;
+    std::cout << "ConstDefAST { def:";
     switch(tag){
         case ConstDefAST::SINGLE:
             {
@@ -128,14 +175,20 @@ void ConstDefAST::Dump() const
         
         case ConstDefAST::ARRAY:
             {
+                std::cout << "CONST ARRAY " << ident ;
+                
                 std::vector<int> arr_size; // a[5][4][3] <=> arr_size = {5, 4, 3}
                 for(auto &i : const_exp_list){
                     arr_size.push_back(i->Get_value());
+                    std::cout << '[' << i->Get_value() << "]";
                 }
-
+    
                 std::string ir_name = symbol_tb_stack.Get_var_name(ident);
                 symbol_tb_stack.insertArray(ident, ir_name, arr_size, SymbolTable::CONST_ARRAY);
-         
+
+                return;
+
+
                 string arr_type = ks.getArrType(arr_size);
 
                 int tot_len = 1;
@@ -148,13 +201,14 @@ void ConstDefAST::Dump() const
                 
                 const_init_val->getInitVal(init, arr_size);
                 
-                if(symbol_tb_stack.){
+                if(symbol_tb_stack.is_global(ident)){
                     // Global Const Array
-                    ks.globalAllocArray(name, array_type, ks.getInitList(init, len));
+                    std::string init_list = ks.getInitList(init, arr_size);
+                    ks.append("global " + ident + " = alloc " + arr_type + ", " + init_list + "\n");
                 } else {
                     // Local Const Array
-                    ks.alloc(name, array_type);
-                    initArray(name, init, len);
+                    ks.appendaddtab(ident + ks.alloc32i);;
+                    initArray(ident, init, arr_size);
                 }
             }
             break;
@@ -191,7 +245,8 @@ int ConstInitValAST::Dump() const
         case ConstInitValAST::SINGLE:
             const_val = const_exp->Get_value(); 
             break;
-        case 
+        case ConstInitValAST::ARRAY:
+            break;
     }
 
     return const_val;
@@ -207,9 +262,9 @@ void ConstInitValAST::getInitVal(std::string *ptr, const std::vector<int> &len) 
         width[i] = width[i + 1] * len[i];
     }
     int i = 0;  // 指向下一步要填写的内存位置
-    for(auto &init_val : inits){
-        if(init_val->tag == CONST_EXP){
-            ptr[i++] = to_string(init_val->getValue());
+    for(auto &init_val : const_exp_list){
+        if(init_val->tag == SINGLE){
+            ptr[i++] = to_string(init_val->const_exp->Get_value());
         } else {
             assert(n > 1);  // 对一维数组初始化不可能再套一个Aggregate{{}}
             int j = n - 1;

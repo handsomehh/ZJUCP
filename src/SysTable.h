@@ -146,7 +146,9 @@ public:
     {
         ir_name = ir_name_;
         tag = tag_;
-        arr_size.assign(arr_size_.begin(), arr_size_.end());
+        for (auto i : arr_size_){
+            arr_size.push_back(i);
+        }
     }
 
     void Print()

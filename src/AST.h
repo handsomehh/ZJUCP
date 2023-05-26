@@ -345,7 +345,7 @@ public:
     std::unique_ptr<ConstInitValAST> const_init_val;
     void Dump() const;
     void Dump_Global() const;
-    void getInitVal(std::string *ptr, const std::vector<int> &len) const;
+};
 
 class ArrayIndexListAST : public BaseAST{
 public:
@@ -382,6 +382,7 @@ public:
     std::unique_ptr<ConstExpAST> const_exp;
     std::vector<std::unique_ptr<ConstInitValAST>> const_exp_list; // const array
     int Dump() const;
+    void getInitVal(std::string *ptr, const std::vector<int> &len) const;
 };
 
 class LValAST : public BaseAST
