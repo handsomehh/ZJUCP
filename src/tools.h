@@ -83,6 +83,15 @@ public:
         koopa_str += "  " + res + " = " + op + " " + src1 + ", " + src2 + "\n";
     }
 
+    // 获取数组的在koopa IR中的类型表达，例如int a[5] => [i32, 5]
+    std::string getArrType(const std::vector<int> &arr_size){
+        std::string type = "i32";
+        for(int i = arr_size.size() - 1; i >= 0; --i){
+            type = "[" + type + ", " + std::to_string(arr_size[i]) + "]";
+        }
+        return type;
+    }
+
     const char *c_str() { return koopa_str.c_str(); }
 };
 

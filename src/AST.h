@@ -38,6 +38,10 @@ class BlockItemAST;
 class LValAST;
 class ConstExpAST;
 
+// 数组相关
+class ArrayIndexListAST;
+class LvalArrayIndexListAST;
+
 class BaseAST
 {
 public:
@@ -334,16 +338,27 @@ public:
 class ConstDefAST : public BaseAST
 {
 public:
+    enum TYPE {SINGLE, ARRAY};
+    TYPE tag;
     std::string ident;
+    std::vector<std::unique_ptr<ConstExpAST>> const_exp_list; // 一组常数值，表述数组的维度，例如vec = {5,5} <=> a[5][5]
     std::unique_ptr<ConstInitValAST> const_init_val;
     void Dump() const;
     void Dump_Global() const;
+    void getInitVal(std::string *ptr, const std::vector<int> &len) const;
+
+class ArrayIndexListAST : public BaseAST{
+public:
+    std::vector<std::unique_ptr<ConstExpAST>> const_exp_list;
 };
 
 class VarDefAST : public BaseAST
 {
 public:
+    enum TYPE {SINGLE, ARRAY};
+    TYPE tag;
     std::string ident;
+    std::vector<std::unique_ptr<ConstExpAST>> const_exp_list; // 一组常数值，表述数组的维度，例如vec = {5,5} <=> a[5][5]
     std::unique_ptr<InitValAST> init_val;
     void Dump() const;
     void Dump_Global() const;
@@ -352,22 +367,37 @@ public:
 class InitValAST : public BaseAST
 {
 public:
+    enum TYPE {SINGLE, ARRAY};
+    TYPE tag;
     std::unique_ptr<ExpAST> exp;
+    std::vector<std::unique_ptr<InitValAST>> exp_list; // 数组初始值
     int Get_value();
 };
 
 class ConstInitValAST : public BaseAST
 {
 public:
+    enum TYPE {SINGLE, ARRAY};
+    TYPE tag;
     std::unique_ptr<ConstExpAST> const_exp;
+    std::vector<std::unique_ptr<ConstInitValAST>> const_exp_list; // const array
     int Dump() const;
 };
 
 class LValAST : public BaseAST
 {
 public:
+    enum TYPE {IDENT, ARRAY};
+    TYPE tag;
     std::string ident;
+    std::vector<std::unique_ptr<ExpAST>> exp_list;// 数组的情况，记录数组下标
 };
+
+class LvalArrayIndexListAST : public BaseAST {
+public:
+    std::vector<std::unique_ptr<ExpAST>> exp_list;
+};
+
 
 class ConstExpAST : public BaseAST
 {

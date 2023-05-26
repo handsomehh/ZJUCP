@@ -47,7 +47,7 @@ using namespace std;
 %token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE BREAK CONTINUE VOID
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
-%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams
+%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams ArrayIndexList LvalArrayIndexList
 %type <int_val> Number
 %type <char_val> UnaryOp MULOp AddOp
 %%
@@ -146,8 +146,6 @@ BType
   ;
 ConstDef
   : ConstDefAtom ',' ConstDef{
-    std::cout<<"ConstDef"<<std::endl;
-
       auto ast = new ConstDeclAST();
       auto rec = unique_ptr<ConstDeclAST>((ConstDeclAST*)$3);
 
@@ -160,8 +158,6 @@ ConstDef
       $$ = ast;
 
   } | ConstDefAtom{
-    std::cout<<"ConstDefAtom"<<std::endl;
-
       auto ast = new ConstDeclAST();
       ast->const_defs.push_back(unique_ptr<ConstDefAST>((ConstDefAST*)$1));
       $$ = ast;
@@ -169,24 +165,64 @@ ConstDef
   ;
 ConstDefAtom
   : IDENT '=' ConstInitVal{
-    std::cout<<"IDENT = ConstInitVal"<<std::endl;
-
       auto ast = new ConstDefAST();
       ast->ident = *unique_ptr<std::string>($1);
       ast->const_init_val = unique_ptr<ConstInitValAST>((ConstInitValAST*)$3);
       $$ = ast;
+  } | IDENT ArrayIndexList '=' ConstInitVal{
+      auto ast = new ConstDefAST();
+      ast->ident = *unique_ptr<std::string>($1);
+      ast->tag = ConstDefAST::ARRAY;
+      unique_ptr<ArrayIndexListAST> p((ArrayIndexListAST *)$2);
+      for (auto &i : p->const_exp_list){
+        ast->const_exp_list.emplace_back(i.release());
+      }
+      ast->const_init_val = unique_ptr<ConstInitValAST>((ConstInitValAST *)$4);
+      $$ = ast;
   }
   ;
+
+ArrayIndexList
+  : '[' ConstExp ']' {
+    auto ast = new ArrayIndexListAST();
+    ast->const_exp_list.emplace_back((ConstExpAST *)$2);
+    $$ = ast;
+  } | ArrayIndexList '[' ConstExp ']'{
+    auto ast = (ArrayIndexListAST*)$1;
+    ast->const_exp_list.emplace_back((ConstExpAST *)$3);
+    $$ = ast;
+  }
 
 ConstInitVal
   : ConstExp {
-    std::cout<<"ConstExp"<<std::endl;
-
     auto ast = new ConstInitValAST();
+    ast->tag = ConstInitValAST::SINGLE;
     ast->const_exp = unique_ptr<ConstExpAST>((ConstExpAST *)$1);
+    $$ = ast;
+  } | '{' '}'{
+    auto ast = new ConstInitValAST();
+    ast->tag = ConstInitValAST::ARRAY;
+    $$ = ast;
+  } | '{' ConstInitValList '}' {
+    auto ast = $2;
     $$ = ast;
   }
   ;
+
+ConstInitValList
+  : ConstInitVal {
+    auto ast = new ConstInitValAST();
+    ast->tag = ConstInitValAST::ARRAY;
+    ast->const_exp_list.emplace_back((ConstInitValAST *)$1);
+    $$ = ast;
+  } | ConstInitValList ',' ConstInitVal {
+    auto ast = (ConstInitValAST *)$1;
+    ast->const_exp_list.emplace_back((ConstInitValAST *)$3);
+    $$ = ast;
+  }
+  ;
+
+
 VarDecl
   : BType VarDef ';' {
     auto ast = (VarDeclAST *)$2;
@@ -217,18 +253,26 @@ VarDef
 
 VarDefAtom
   : IDENT{
-
     auto ast = new VarDefAST();
+    ast->tag = VarDefAST::SINGLE;
     ast->ident = *unique_ptr<string>($1);
     $$ = ast;
-
   }  | IDENT '=' InitVal {
-
     auto ast = new VarDefAST();
     ast->ident = *unique_ptr<string>($1);
+    ast->tag = VarDefAST::SINGLE;
     ast->init_val = unique_ptr<InitValAST>((InitValAST *)$3);
     $$ = ast;
-
+  } | IDENT ArrayIndexList '=' InitVal{
+    auto ast = new VarDefAST();
+    ast->ident = *unique_ptr<string>($1);
+    ast->tag = VarDefAST::ARRAY;
+    unique_ptr<ArrayIndexListAST> p((ArrayIndexListAST *)$2);
+    for (auto &i : p->const_exp_list){
+        ast->const_exp_list.emplace_back(i.release());
+      }
+    ast->init_val = unique_ptr<ConstInitValAST>((ConstInitValAST *)$4);
+    $$ = ast;
   }
   ;
 
@@ -429,8 +473,30 @@ LVal
     std::cout<<ast->ident<<std::endl;
 
     $$ = ast;
+  } | IDENT LvalArrayIndexList {
+    auto ast = new LValAST();
+    unique_ptr<LvalArrayIndexListAST> p((LvalArrayIndexListAST *)$2);
+    ast->tag = LValAST::ARRAY;
+    ast->ident = *unique_ptr<string>($1);
+    for(auto &i : p->exp_list){
+        ast->exp_list.emplace_back(i.release());
+    }
+    $$ = ast;
   }
   ;
+
+LvalArrayIndexList
+  : '[' Exp ']' {
+      auto ast = new LvalArrayIndexListAST();
+      ast->exp_list.emplace_back((ExpAST *)$2);
+      $$ = ast;
+    } | LvalArrayIndexList '[' Exp ']' {
+      auto ast = (LvalArrayIndexListAST *)$1;
+      ast->exp_list.emplace_back((ExpAST *)$3);
+      $$ = ast;
+    }
+    ;
+    
 PrimaryExp
   : '(' Exp ')' {
     auto ast = new PrimaryExpAST();

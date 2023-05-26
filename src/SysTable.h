@@ -113,14 +113,18 @@ class Symbol
 {
 public:
     std::string ir_name;                  // 表示该symbol在IR中的名称，例如变量a，在IR中的名称可以是@a1, @a2...
-    std::variant<IntVar, ConstInt> value; // 表示该symbol的值, 不过主要受const有用， variables的值还是要运行时确定
+    std::variant<IntVar, ConstInt> value; // 表示该symbol的值, 不过主要是const有用， variables的值还是要运行时确定
+    std::vector<int> arr_size;   // 当symbol表示的对象为数组时，arr_size表示数组的维度信息
     enum TYPE
     {
         INT,
         CONST,
+        CONST_ARRAY,
         UNKNOWN
     }; // 表示该symbol的类型
     TYPE tag;
+
+    // 单变量的symbol构造函数
     Symbol(std::string ir_name_, int value_, TYPE tag_)
     {
         ir_name = ir_name_;
@@ -136,6 +140,15 @@ public:
             value = in;
         }
     }
+
+    // 数组的symbol构造函数
+    Symbol(std::string ir_name_, const std::vector<int> &arr_size_, TYPE tag_)
+    {
+        ir_name = ir_name_;
+        tag = tag_;
+        arr_size.assign(arr_size_.begin(), arr_size_.end());
+    }
+
     void Print()
     {
         std::cout << "  tag:";
@@ -153,6 +166,8 @@ public:
         }
     }
 };
+
+
 class SymbolTable
 {
 public:
@@ -161,7 +176,8 @@ public:
     enum TYPE
     {
         INT,
-        CONST
+        CONST,
+        CONST_ARRAY
     };
     /*fun*/
     int insert(const std::string &name, const std::string &ir_name, int value, TYPE mode)
@@ -189,6 +205,7 @@ public:
             return 0;
         }
     }
+
     int insert(const std::string &name, const std::string &ir_name, TYPE mode)
     {
         if (is_exist(name))
@@ -206,6 +223,26 @@ public:
         {
             std::cout << "const should be initial,but not :" << name << std::endl;
             return 0;
+        }
+        else
+        {
+            std::cout << "error input mode\n";
+            return 0;
+        }
+    }
+
+    // 向symbol table中插入一个数组symbol
+    int insertArray(const std::string &name, const std::string &ir_name, const std::vector<int> &arr_size, TYPE mode)
+    {
+        if (is_exist(name))
+        {
+            std::cout << "array already exist :" << name << std::endl;
+            return 0;
+        }
+        if (mode == CONST_ARRAY){
+            Symbol *symbol = new Symbol(ir_name, arr_size, Symbol::CONST_ARRAY);
+            map.insert({name, symbol});
+            return 1;
         }
         else
         {
@@ -306,6 +343,8 @@ public:
         }
     }
 };
+
+
 class FunctionTable
 {
 
@@ -403,6 +442,12 @@ public:
     {
         return symbol_table_stack.back()->insert(name, ir_name, mode);
     }
+
+    // 向符号表栈（最顶端的符号表）插入一个数组symbol
+    int insertArray(const std::string &name, const std::string &ir_name, const std::vector<int> &arr_size, SymbolTable::TYPE mode){
+        return symbol_table_stack.back()->insertArray(name, ir_name, arr_size, mode);
+    }
+
 
     // 更改符号表栈（最近作用域对应的的符号表）中的变量值
     // ret: 修改成功，返回true；修改不成功（变量不存在），返回false
@@ -552,6 +597,11 @@ public:
     int insert_global(const std::string &name, const std::string &ir_name, SymbolTable::TYPE mode)
     {
         return symbol_table_stack.front()->insert(name, ir_name, mode);
+    }
+
+    // 查看一个变量是否是全局变量
+    bool is_global(const std::string &name){
+        return symbol_table_stack.front()->is_exist(name);
     }
 
     void func_decl_init()

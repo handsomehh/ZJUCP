@@ -110,19 +110,59 @@ void ConstDeclAST::Dump_Global() const
 void ConstDefAST::Dump() const
 {
     std::cout << "ConstDefAST { def:" << ident;
-    // func_def->Dump();
-    // 这个判断条件是为了保证在当前作用域，该常量只能被定义一次
-    if (symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size())
-    {
-        std::cout << "redefined const val: " << ident;
-        return;
+    switch(tag){
+        case ConstDefAST::SINGLE:
+            {
+                // 这个判断条件是为了保证在当前作用域，该常量只能被定义一次
+                if (symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size())
+                {
+                    std::cout << "redefined const val: " << ident;
+                    return;
+                }
+
+                int value = const_init_val->Dump();
+                std::string ir_name = symbol_tb_stack.Get_var_name(ident);
+                symbol_tb_stack.insert(ident, ir_name, value, SymbolTable::CONST);
+            }
+            break;
+        
+        case ConstDefAST::ARRAY:
+            {
+                std::vector<int> arr_size; // a[5][4][3] <=> arr_size = {5, 4, 3}
+                for(auto &i : const_exp_list){
+                    arr_size.push_back(i->Get_value());
+                }
+
+                std::string ir_name = symbol_tb_stack.Get_var_name(ident);
+                symbol_tb_stack.insertArray(ident, ir_name, arr_size, SymbolTable::CONST_ARRAY);
+         
+                string arr_type = ks.getArrType(arr_size);
+
+                int tot_len = 1;
+                for(auto i : arr_size) 
+                    tot_len *= i;
+
+                string *init = new string[tot_len];
+                for(int i = 0; i < tot_len; ++i)
+                    init[i] = "0";
+                
+                const_init_val->getInitVal(init, arr_size);
+                
+                if(symbol_tb_stack.){
+                    // Global Const Array
+                    ks.globalAllocArray(name, array_type, ks.getInitList(init, len));
+                } else {
+                    // Local Const Array
+                    ks.alloc(name, array_type);
+                    initArray(name, init, len);
+                }
+            }
+            break;
     }
 
-    int value = const_init_val->Dump();
-    std::string ir_name = symbol_tb_stack.Get_var_name(ident);
-    symbol_tb_stack.insert(ident, ir_name, value, SymbolTable::CONST);
     std::cout << " }";
-    // ks.declLibFunc();
+
+    
 }
 
 void ConstDefAST::Dump_Global() const
@@ -145,7 +185,53 @@ void ConstDefAST::Dump_Global() const
 
 int ConstInitValAST::Dump() const
 {
-    return const_exp->Get_value();
+    // ConstInitValAST::Dump函数，对于单一变量，返回值就是const的值；而对于数组的情况，
+    int const_val = 0;
+    switch (tag){
+        case ConstInitValAST::SINGLE:
+            const_val = const_exp->Get_value(); 
+            break;
+        case 
+    }
+
+    return const_val;
+    
+}
+
+// 对ptr指向的区域初始化，所指区域的数组类型由len规定
+void ConstInitValAST::getInitVal(std::string *ptr, const std::vector<int> &len) const{
+    int n = len.size();
+    vector<int> width(n);
+    width[n - 1] = len[n - 1];
+    for(int i = n - 2; i >= 0; --i){
+        width[i] = width[i + 1] * len[i];
+    }
+    int i = 0;  // 指向下一步要填写的内存位置
+    for(auto &init_val : inits){
+        if(init_val->tag == CONST_EXP){
+            ptr[i++] = to_string(init_val->getValue());
+        } else {
+            assert(n > 1);  // 对一维数组初始化不可能再套一个Aggregate{{}}
+            int j = n - 1;
+            if(i == 0){
+                j = 1;
+            } else{
+                j = n - 1;
+                for(; j >= 0; --j){
+                    if(i % width[j] != 0)
+                        break;
+                }
+                assert(j < n - 1); // 保证整除最后一维
+                ++j;    // j 指向最大的可除的维度
+            }
+            init_val->getInitVal(
+                ptr + i, 
+                vector<int>(len.begin() + j, len.end())
+                );
+            i += width[j];
+        }
+        if(i >= width[0]) break;
+    }
 }
 
 void VarDeclAST::Dump() const
