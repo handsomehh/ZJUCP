@@ -26,7 +26,7 @@ int main(int argc, const char *argv[])
   yyin = fopen(input, "r");
   assert(yyin);
 
-  // 输出文件
+  // //输出文件
   // ofstream fout(output);
   // // 获取测试用例
   // ifstream ihaha(input);

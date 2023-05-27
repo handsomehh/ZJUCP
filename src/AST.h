@@ -289,6 +289,7 @@ public:
     int number;
     std::string Dump() const;
     int Get_value();
+    std::string DumpLval() const;
 };
 
 class DeclAST : public BaseAST {
@@ -372,6 +373,7 @@ public:
     std::unique_ptr<ExpAST> exp;
     std::vector<std::unique_ptr<InitValAST>> exp_list; // 数组初始值
     int Get_value();
+    void getInitVal(std::string *ptr, const std::vector<int> &len, bool is_global = false) const;
 };
 
 class ConstInitValAST : public BaseAST
@@ -392,6 +394,7 @@ public:
     TYPE tag;
     std::string ident;
     std::vector<std::unique_ptr<ExpAST>> exp_list;// 数组的情况，记录数组下标
+    std::string Dump() const;
 };
 
 class LvalArrayIndexListAST : public BaseAST {

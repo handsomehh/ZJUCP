@@ -120,6 +120,7 @@ public:
         INT,
         CONST,
         CONST_ARRAY,
+        ARRAY,
         UNKNOWN
     }; // 表示该symbol的类型
     TYPE tag;
@@ -179,7 +180,8 @@ public:
     {
         INT,
         CONST,
-        CONST_ARRAY
+        CONST_ARRAY,
+        ARRAY
     };
     /*fun*/
     int insert(const std::string &name, const std::string &ir_name, int value, TYPE mode)
@@ -241,13 +243,17 @@ public:
             std::cout << "array already exist :" << name << std::endl;
             return 0;
         }
-        if (mode == CONST_ARRAY){
+        else if (mode == CONST_ARRAY){
             Symbol *symbol = new Symbol(ir_name, arr_size, Symbol::CONST_ARRAY);
             map.insert({name, symbol});
             return 1;
         }
-        else
-        {
+        else if (mode == ARRAY){
+            Symbol *symbol = new Symbol(ir_name, arr_size, Symbol::ARRAY);
+            map.insert({name, symbol});
+            return 1;
+        }
+        else {
             std::cout << "error input mode\n";
             return 0;
         }
@@ -311,6 +317,14 @@ public:
             auto res = map.find(name);
             return res->second->tag;
             // map.find(name)->value
+        }
+    }
+
+    // 获取数组size
+    void Get_array_size(std::string name, std::vector<int>& arr_size){
+        auto res = map.find(name);
+        for (auto i: res->second->arr_size){
+            arr_size.push_back(i);
         }
     }
 
@@ -547,6 +561,27 @@ public:
         }
     }
 
+    // 如果name是数组，获取该数组的size，存储在arr_size中并返回
+    void Get_array_size(std::string name, std::vector<int>& arr_size){
+        bool is_exist = false;
+        for (auto rit = symbol_table_stack.rbegin(); rit != symbol_table_stack.rend(); ++rit)
+        {
+            const auto &tb = *rit;
+            if (tb->is_exist(name)){
+                is_exist = true;
+                tb->Get_array_size(name, arr_size);
+                break;
+            }
+        }
+
+        if (!is_exist)
+        {
+            std::cout << "not found :" << name << std::endl;
+        }
+
+        return;
+    }
+
     // 获取name变量在最近一个作用域的IR名称
     std::string Get_ir_name(const std::string &name)
     {
@@ -589,6 +624,7 @@ public:
         }
         return false;
     }
+
     // 插入一个全局变量，带初始值
     int insert_global(const std::string &name, const std::string &ir_name, int value, SymbolTable::TYPE mode)
     {
@@ -599,6 +635,11 @@ public:
     int insert_global(const std::string &name, const std::string &ir_name, SymbolTable::TYPE mode)
     {
         return symbol_table_stack.front()->insert(name, ir_name, mode);
+    }
+
+    // 向符号表栈（最底部的符号表）插入一个全局数组symbol
+    int insertArray_global(const std::string &name, const std::string &ir_name, const std::vector<int> &arr_size, SymbolTable::TYPE mode){
+        return symbol_table_stack.front()->insertArray(name, ir_name, arr_size, mode);
     }
 
     // 查看一个变量是否是全局变量

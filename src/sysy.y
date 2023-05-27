@@ -47,7 +47,7 @@ using namespace std;
 %token INT RETURN EQ NE LEQ BGE AND OR CONST IF ELSE WHILE BREAK CONTINUE VOID
 %token <str_val> IDENT
 %token <int_val> INT_CONST 
-%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams ArrayIndexList LvalArrayIndexList ConstInitValList
+%type <ast_val> FuncDef FuncType Block Stmt CompUnit Exp PrimaryExp UnaryExp  MulExp AddExp RelExp EqExp LAndExp LOrExp Decl ConstDecl VarDecl BType ConstDef VarDef ConstInitVal InitVal  BlockItem LVal ConstExp VarDefAtom ConstDefAtom BlockItemAtom CompUnitList CompUnitAtom FuncFParam FuncFParams FuncRParams ArrayIndexList LvalArrayIndexList ConstInitValList InitValList
 %type <int_val> Number
 %type <char_val> UnaryOp MULOp AddOp
 %%
@@ -273,6 +273,15 @@ VarDefAtom
       }
     ast->init_val = unique_ptr<InitValAST>((InitValAST *)$4);
     $$ = ast;
+  } | IDENT ArrayIndexList{
+    auto ast = new VarDefAST();
+    ast->ident = *unique_ptr<string>($1);
+    ast->tag = VarDefAST::ARRAY;
+    unique_ptr<ArrayIndexListAST> p((ArrayIndexListAST *)$2);
+    for (auto &i : p->const_exp_list){
+        ast->const_exp_list.emplace_back(i.release());
+    }
+    $$ = ast;
   }
   ;
 
@@ -282,9 +291,28 @@ InitVal
     auto ast = new InitValAST();
     ast->exp  = unique_ptr<ExpAST>((ExpAST *)$1);
     $$ = ast;
-
-  } 
+  } | '{' '}' {
+    auto ast = new InitValAST();
+    ast->tag = InitValAST::ARRAY;
+    $$ = ast;
+  } | '{' InitValList '}' {
+    $$ = $2;
+  }
   ;
+
+InitValList
+  : InitVal {
+    auto ast = new InitValAST();
+    ast->tag = InitValAST::ARRAY;
+    ast->exp_list.emplace_back((InitValAST *)$1);
+    $$ = ast;
+  } | InitValList ',' InitVal {
+    auto ast = (InitValAST *)$1;
+    ast->exp_list.emplace_back((InitValAST *)$3);
+    $$ = ast;
+  }
+  ;
+
 FuncDef
   : BType IDENT '(' ')' Block {
     auto ast = new FuncDefAST();

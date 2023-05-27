@@ -83,7 +83,7 @@ public:
         koopa_str += "  " + res + " = " + op + " " + src1 + ", " + src2 + "\n";
     }
 
-    // 获取数组的在koopa IR中的类型表达，例如int a[5] => [i32, 5]
+    // [NEED MODIFI] 获取数组的在koopa IR中的类型表达，例如int a[5] => [i32, 5]
     std::string getArrType(const std::vector<int> &arr_size){
         std::string type = "i32";
         for(int i = arr_size.size() - 1; i >= 0; --i){
@@ -92,7 +92,7 @@ public:
         return type;
     }
 
-    // 数组内容在ptr所指的内存区域，数组类型由len描述. ptr[i]为常量，或者是KoopaIR中的名字
+    // [NEED MODIFI] 数组内容在ptr所指的内存区域，数组类型由len描述. ptr[i]为常量，或者是KoopaIR中的名字
     std::string getInitList(std::string *ptr, const std::vector<int> &len){
         std::string ret = "{";
         if(len.size() == 1){

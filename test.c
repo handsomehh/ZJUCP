@@ -1,5 +1,5 @@
-
 int main() {
-  const int a[5] = {1, 2, 3, 4, 5};
-  return a[1];
+  int a[5] = {1,2,3,4,5};
+  int b = a[1];
+  return b;
 }

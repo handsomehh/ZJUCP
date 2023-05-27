@@ -34,62 +34,18 @@ bool ctrl;
 
 While_Stack while_stack;
 
-
-/**
- * 完成对Local数组初始化的IR生成
- * @param name: 数组在Koopa IR中的名字 
- * @param ptr: 指向数组的内容，例如{"1", "%2"}
- * @param len: 描述数组类型，i.e. 各个维度的长
-*/
-void initArray(std::string name, std::string *ptr, const std::vector<int> &len){    
-    int n = len[0];
-    if(len.size() == 1){
-        for(int i = 0; i < n; ++i){
-            string tmp = symbol_tb_stack.Get_count();
-            ks.getelemptr(tmp, name, i);
-            ks.appendaddtab("store " + ptr[i] + ", " + tmp + '\n');
-        }
-    } else {
-        vector<int> sublen(len.begin() + 1, len.end());
-        int width = 1;
-        for(auto l : sublen)  width *= l;
-        for(int i = 0; i < n; ++i){
-            string tmp = symbol_tb_stack.Get_count();
-            ks.getelemptr(tmp, name, i);
-            initArray(tmp, ptr + i * width, sublen);
-        }
-    }
-}
-
-/**
- * 返回数组中某个元素的指针
- * @param name: 数组在Koopa IR中的名字 
- * @param index: 元素在数组中的下标
-*/
-std::string getElemPtr(const std::string &name, const std::vector<std::string>& index){
-    if(index.size() == 1){
-        string tmp = symbol_tb_stack.Get_count();
-        ks.getelemptr(tmp, name, index[0]);
-        return tmp;
-    } else {
-        string tmp = symbol_tb_stack.Get_count();
-        ks.getelemptr(tmp, name, index[0]);
-        return getElemPtr(
-            tmp,
-            vector<string>(index.begin() + 1, index.end())
-        );
-    }
-}
-
 void CompUnitAST::Dump()const {
     std::cout << "CompUnitAST { ";
     ks.func_decl();
     symbol_tb_stack.func_decl_init();
+
+    // 定义全局变量
     for (auto &i : decls)
     {
         i->Dump_Global();
     }
 
+    // 定义函数和局部变量
     for (auto &i : func_defs)
     {
         i->Dump();
@@ -154,19 +110,49 @@ void ConstDeclAST::Dump_Global() const
     std::cout << " }";
     // ks.declLibFunc();
 }
+
+/**
+ * 完成对Local数组初始化的IR生成
+ * 其中 name: 数组在Koopa IR中的名字  ptr: 指向数组的内容，例如{"1", "%2"}  len: 描述数组类型，i.e. 各个维度的长
+*/
+void array_init(std::string name, std::string *ptr, const std::vector<int> &arr_size){    
+    int n = arr_size[0];
+    if(arr_size.size() == 1){
+        for(int i = 0; i < n; ++i){
+            string tmp = symbol_tb_stack.Get_count();
+            ks.getelemptr(tmp, name, i);
+            ks.appendaddtab("store " + ptr[i] + ", " + tmp + '\n');
+        }
+
+        return;
+    } 
+
+    vector<int> sublen(arr_size.begin() + 1, arr_size.end());
+    int width = 1;
+    for(auto l : sublen)  width *= l;
+    for(int i = 0; i < n; ++i){
+        string tmp = symbol_tb_stack.Get_count();
+        ks.getelemptr(tmp, name, i);
+        int offset = i * width;
+        array_init(tmp, ptr + offset, sublen);
+    }
+    
+}
+
 void ConstDefAST::Dump() const
 {
     std::cout << "ConstDefAST { def:";
+    // 这个判断条件是为了保证在当前作用域，该常量只能被定义一次
+    if (symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size())
+    {
+        std::cout << "redefined const val: " << ident;
+        std::cout << "}" ;
+        return;
+    }
     switch(tag){
         case ConstDefAST::SINGLE:
             {
-                // 这个判断条件是为了保证在当前作用域，该常量只能被定义一次
-                if (symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size())
-                {
-                    std::cout << "redefined const val: " << ident;
-                    return;
-                }
-
+                std::cout << "CONST " << ident;
                 int value = const_init_val->Dump();
                 std::string ir_name = symbol_tb_stack.Get_var_name(ident);
                 symbol_tb_stack.insert(ident, ir_name, value, SymbolTable::CONST);
@@ -175,19 +161,17 @@ void ConstDefAST::Dump() const
         
         case ConstDefAST::ARRAY:
             {
-                std::cout << "CONST ARRAY " << ident ;
+                //[NEED MODIFY]
+                std::cout << "CONST ARRAY " << ident;
                 
                 std::vector<int> arr_size; // a[5][4][3] <=> arr_size = {5, 4, 3}
                 for(auto &i : const_exp_list){
                     arr_size.push_back(i->Get_value());
                     std::cout << '[' << i->Get_value() << "]";
                 }
-    
+                
                 std::string ir_name = symbol_tb_stack.Get_var_name(ident);
                 symbol_tb_stack.insertArray(ident, ir_name, arr_size, SymbolTable::CONST_ARRAY);
-
-                return;
-
 
                 string arr_type = ks.getArrType(arr_size);
 
@@ -201,15 +185,9 @@ void ConstDefAST::Dump() const
                 
                 const_init_val->getInitVal(init, arr_size);
                 
-                if(symbol_tb_stack.is_global(ident)){
-                    // Global Const Array
-                    std::string init_list = ks.getInitList(init, arr_size);
-                    ks.append("global " + ident + " = alloc " + arr_type + ", " + init_list + "\n");
-                } else {
-                    // Local Const Array
-                    ks.appendaddtab(ident + ks.alloc32i);;
-                    initArray(ident, init, arr_size);
-                }
+                // Local Const Array IR
+                ks.appendaddtab(ir_name + " = alloc " + arr_type + '\n');;
+                array_init(ir_name, init, arr_size);
             }
             break;
     }
@@ -221,20 +199,59 @@ void ConstDefAST::Dump() const
 
 void ConstDefAST::Dump_Global() const
 {
-    std::cout << "ConstDefAST { def:" << ident;
+    std::cout << "[Global]ConstDefAST { def:" << ident;
     // func_def->Dump();
     // 这个判断条件是为了保证在当前作用域，该常量只能被定义一次
     if (symbol_tb_stack.is_exist_global(ident))
     {
         std::cout << "Global redefined const val: " << ident;
+        std::cout << " }";
         return;
     }
 
-    int value = const_init_val->Dump();
     std::string ir_name = symbol_tb_stack.Get_var_name(ident);
-    symbol_tb_stack.insert_global(ident, ir_name, value, SymbolTable::CONST);
+    switch(tag){
+        case ConstDefAST::SINGLE :
+            {
+                int value = const_init_val->Dump();
+                symbol_tb_stack.insert_global(ident, ir_name, value, SymbolTable::CONST);
+            }
+            break;
+        case ConstDefAST::ARRAY :
+            {
+                std::cout << "CONST ARRAY " << ident;
+                
+                std::vector<int> arr_size; // a[5][4][3] <=> arr_size = {5, 4, 3}
+                for(auto &i : const_exp_list){
+                    arr_size.push_back(i->Get_value());
+                    std::cout << '[' << i->Get_value() << "]";
+                }
+                
+                std::string ir_name = symbol_tb_stack.Get_var_name(ident);
+                symbol_tb_stack.insertArray_global(ident, ir_name, arr_size, SymbolTable::CONST_ARRAY);
+
+                string arr_type = ks.getArrType(arr_size);
+
+                int total = 1;
+                for(auto i : arr_size) 
+                    total = total * i;
+
+                string *init = new string[total];
+                for(int i = 0; i < total; ++i)
+                    init[i] = "0";
+                
+                const_init_val->getInitVal(init, arr_size);
+                
+                // Global Const Array IR
+                std::string init_list = ks.getInitList(init, arr_size);
+                ks.append("global " + ir_name + " = alloc " + arr_type + ", " + init_list + "\n");
+                
+            }
+            break;
+    }
+
     std::cout << " }";
-    // ks.declLibFunc();
+   
 }
 
 int ConstInitValAST::Dump() const
@@ -246,6 +263,7 @@ int ConstInitValAST::Dump() const
             const_val = const_exp->Get_value(); 
             break;
         case ConstInitValAST::ARRAY:
+            // 数组的初始化放在函数 ConstInitValAST::getInitVal 中进行
             break;
     }
 
@@ -311,47 +329,164 @@ void VarDeclAST::Dump_Global() const
 }
 void VarDefAST::Dump() const
 {
-    cout << "VaeDefAST { def:" << ident;
+    std::cout << "VaeDefAST { def:" << ident;
 
     // 这个判断条件是为了保证在当前作用域，该变量只能被定义一次
     if (symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size())
     {
-        cout << "Var " << ident << " has been defined" << endl;
+        std::cout << "Var " << ident << " has been defined" << endl;
+        std::cout << " }";
         return;
     }
 
     std::string ir_name = symbol_tb_stack.Get_var_name(ident);
-    ks.appendaddtab(ir_name + ks.alloc32i);
-    symbol_tb_stack.insert(ident, ir_name, SymbolTable::INT);
-    if (init_val)
-    {
-        std::string res = init_val->exp->Dump();
-        ks.appendaddtab("store " + res + ", " + ir_name + '\n');
+
+    switch(tag){
+        case ConstDefAST::SINGLE :
+            {
+                ks.appendaddtab(ir_name + ks.alloc32i);
+                symbol_tb_stack.insert(ident, ir_name, SymbolTable::INT);
+                if (init_val)
+                {
+                    std::string res = init_val->exp->Dump();
+                    ks.appendaddtab("store " + res + ", " + ir_name + '\n');
+                }
+            }
+            break;
+        case ConstDefAST::ARRAY :
+            {
+                std::cout << "ARRAY " << ident ;
+                
+                std::vector<int> arr_size; // a[5][4][3] <=> arr_size = {5, 4, 3}
+                for(auto &i : const_exp_list){
+                    arr_size.push_back(i->Get_value());
+                    std::cout << '[' << i->Get_value() << "]";
+                }
+    
+                symbol_tb_stack.insertArray(ident, ir_name, arr_size, SymbolTable::ARRAY);
+
+                string arr_type = ks.getArrType(arr_size);
+
+                int total = 1;
+                for(auto i : arr_size) 
+                    total = total * i;
+
+                string *init = new string[total];
+                for(int i = 0; i < total; ++i)
+                    init[i] = "0";
+                
+                // Local Array IR
+                ks.appendaddtab(ir_name + " = alloc " + arr_type + "\n");
+                if (init_val){
+                    init_val->getInitVal(init, arr_size, false);
+                    array_init(ir_name, init, arr_size);
+                }
+            }
+            break;
     }
 
-    cout << " }";
+    std::cout << " }";
 }
+
+void InitValAST::getInitVal(std::string *ptr, const std::vector<int> &len, bool is_global) const{
+    // [NEED MODIFY]
+    int n = len.size();
+    vector<int> width(n);
+    width[n - 1] = len[n - 1];
+    for(int i = n - 2; i >= 0; --i){
+        width[i] = width[i + 1] * len[i];
+    }
+
+
+    int i = 0;  // 指向下一步要填写的内存位置
+    for(auto &init_val : exp_list) {
+        if(init_val->tag == InitValAST::SINGLE) {
+            if(is_global){
+                ptr[i++] = to_string(init_val->exp->Get_value());
+            } else{
+                ptr[i++] = init_val->exp->Dump();
+            }
+        } else {
+            assert(n > 1);  // 对一维数组初始化不可能再套一个Aggregate{{}}
+            int j = n - 1;
+            if(i == 0){
+                j = 1;
+            } else{
+                j = n - 1;
+                for(; j >= 0; --j){
+                    if(i % width[j] != 0)
+                        break;
+                }
+                assert(j < n - 1); // 保证整除最后一维
+                ++j;    // j 指向最大的可除的维度
+            }
+            init_val->getInitVal(ptr + i, vector<int>(len.begin() + j, len.end()));
+            i += width[j];
+        }
+        if(i >= width[0]) break;
+    }
+}
+
 void VarDefAST::Dump_Global() const
 {
-    cout << "VaeDefAST { def:" << ident;
+    std::cout << "VaeDefAST { def:" << ident;
 
-    // 这个判断条件是为了保证在当前作用域，该变量只能被定义一次
+    // 这个判断条件是为了保证全局变量不重复
     if (symbol_tb_stack.is_exist_global(ident))
     {
-        cout << "Global Var " << ident << " has been defined" << endl;
+        std::cout << "Global Var " << ident << " has been defined" << endl;
         return;
     }
     std::string ir_name = symbol_tb_stack.Get_var_name(ident);
-    symbol_tb_stack.insert_global(ident, ir_name, SymbolTable::INT);
-    if (init_val)
-    {
-        std::string res = std::to_string(init_val->exp->Get_value());
-        ks.append("global " + ir_name + ks.alloc32i_g + res + "\n");
+
+    switch(tag){
+        case VarDefAST::SINGLE :
+            {
+                symbol_tb_stack.insert_global(ident, ir_name, SymbolTable::INT);
+                if (init_val)
+                {
+                    std::string res = std::to_string(init_val->exp->Get_value());
+                    ks.append("global " + ir_name + ks.alloc32i_g + res + "\n");
+                }
+                else
+                {
+                    ks.append("global " + ir_name + ks.alloc32i_g + ks.zero + "\n");
+                }
+            }
+            break;
+        case VarDefAST::ARRAY :
+            {
+                std::cout << "ARRAY " << ident ;
+                
+                std::vector<int> arr_size; // a[5][4][3] <=> arr_size = {5, 4, 3}
+                for(auto &i : const_exp_list){
+                    arr_size.push_back(i->Get_value());
+                    std::cout << '[' << i->Get_value() << "]";
+                }
+    
+                symbol_tb_stack.insertArray(ident, ir_name, arr_size, SymbolTable::ARRAY);
+
+                string arr_type = ks.getArrType(arr_size);
+
+                int tot_len = 1;
+                for(auto i : arr_size) 
+                    tot_len *= i;
+
+                string *init = new string[tot_len];
+                for(int i = 0; i < tot_len; ++i)
+                    init[i] = "0";
+            
+                // Global Const Array IR
+                if (init_val) 
+                    init_val->getInitVal(init, arr_size, true);
+
+                std::string init_list = ks.getInitList(init, arr_size);
+                ks.append("global " + ir_name + " = alloc " + arr_type + ", " + init_list + "\n");
+               
+            }
+            break;
     }
-    else
-    {
-        ks.append("global " + ir_name + ks.alloc32i_g + ks.zero + "\n");
-    }
+    
     cout << " }";
 }
 int InitValAST::Get_value()
@@ -510,7 +645,7 @@ std::string StmtAST::Dump() const
     std::string res = "-1";
     if (tag == StmtAST::RETURN)
     {
-        cout << "RETURN ";
+        std::cout << "RETURN ";
         res = exp->Dump();
         ks.ret(res);
 
@@ -520,24 +655,33 @@ std::string StmtAST::Dump() const
     {
         std::string res = exp->Dump(); // 右表达式结果
         std::string to = lval->ident;  // 目标变量
-        cout << "ASSIGN";
+        std::cout << "ASSIGN";
         int tb_id = symbol_tb_stack.is_exist(to);
-        if (tb_id > 0)
+        if (tb_id > 0) // 符号表栈中存在该变量名
         {
-            std::string ir_name;
-            ks.appendaddtab("store " + res + ", " + symbol_tb_stack.Get_ir_name(to) + '\n');
+            std::string ir_name = symbol_tb_stack.Get_ir_name(to);
+            if (symbol_tb_stack.Get_type(to) == Symbol::INT){
+                ks.appendaddtab("store " + res + ", " + ir_name + '\n');
+            }
+            else if (symbol_tb_stack.Get_type(to) == Symbol::ARRAY){
+                std::string tmp = lval->Dump();
+                ks.appendaddtab("store " + res + ", " + tmp + '\n');
+            }
+            else if (symbol_tb_stack.Get_type(to) == Symbol::CONST || 
+                    symbol_tb_stack.Get_type(to) == Symbol::CONST_ARRAY ){
+                std::cout << " assign to const " << endl;
+            }
         }
         else
         {
-            cout << "assgin to a undeclear var: " << to;
+            std::cout << "assgin to a undeclear var: " << to;
         }
-        // res = lval->Dump();
     }
     else if (tag == StmtAST::EXP)
     {
         if (exp)
         {
-            cout << "Expression_NULL";
+            std::cout << "Expression_NULL";
             res = exp->Dump();
         }
     }
@@ -1041,7 +1185,7 @@ std::string PrimaryExpAST::Dump() const
     }
     else if (tag == PrimaryExpAST::NUMBER)
     {
-        cout << "NUMBER_" << number;
+        std::cout << "NUMBER_" << number;
         return std::to_string(number);
     }
     else if (tag == PrimaryExpAST::LVAL)
@@ -1057,8 +1201,88 @@ std::string PrimaryExpAST::Dump() const
         {
             return std::to_string(symbol_tb_stack.Get_value(lval->ident));
         }
+        else if (symbol_tb_stack.Get_type(lval->ident) == Symbol::CONST_ARRAY ||
+                 symbol_tb_stack.Get_type(lval->ident) == Symbol::ARRAY){
+            std::string tmp = DumpLval();
+            string tmp2 = symbol_tb_stack.Get_count();
+            ks.appendaddtab(tmp2 + " = load " + tmp + '\n');
+            return tmp2;
+        }
     }
+
+    std::cout << "}";
 }
+
+/**
+ * 返回数组中某个元素的指针
+ * 其中，name是数组在Koopa IR中的名字，index是元素在数组中的下标
+*/
+std::string getElemPtr(const std::string &name, const std::vector<std::string>& index){
+    if(index.size() == 1){
+        string tmp = symbol_tb_stack.Get_count();
+        ks.getelemptr(tmp, name, index[0]);
+        return tmp;
+    } 
+
+    string tmp = symbol_tb_stack.Get_count();
+    ks.getelemptr(tmp, name, index[0]);
+    vector<string> tmp2 = vector<string>(index.begin() + 1, index.end());
+    return getElemPtr(tmp, tmp2);
+    
+}
+
+std::string PrimaryExpAST::DumpLval() const{
+    return lval->Dump();
+}
+
+std::string LValAST::Dump() const {
+    std::vector<std::string> idx;
+    std::vector<int> arr_size;
+
+    for (auto& exp : exp_list) {
+        idx.push_back(exp->Dump());
+    }
+
+    symbol_tb_stack.Get_array_size(ident, arr_size);
+
+    // hint: array_size可以是-1开头的，说明这个数组是函数中使用的参数
+    // 如 a[-1][3][2],表明a是参数 a[][3][2], 即 *[3][2].
+    // 此时第一步不能用getelemptr，而应该getptr
+    std::string ir_name = symbol_tb_stack.Get_ir_name(ident);
+    std::string result;
+
+    if (arr_size.size() != 0 && arr_size[0] == -1) {
+        std::vector<int> sub_len(arr_size.begin() + 1, arr_size.end());
+        std::string tmp_val = symbol_tb_stack.Get_count();
+        ks.appendaddtab(tmp_val + " = load " + ir_name + '\n');
+        std::string first_idxed = symbol_tb_stack.Get_count();
+        ks.appendaddtab(first_idxed + " = getptr " + tmp_val + ", " + idx[0] + "\n");
+
+        if (idx.size() > 1) {
+            result = getElemPtr(
+                first_idxed,
+                std::vector<std::string>(
+                    idx.begin() + 1, idx.end()
+                )
+            );
+        } else {
+            result = first_idxed;
+        }
+
+    } else {
+        result = getElemPtr(ir_name, idx);
+    }
+
+    if (idx.size() < arr_size.size()) {
+        // 一定是作为函数参数即实参使用，因为下标不完整
+        std::string real_param = symbol_tb_stack.Get_count();
+        ks.getelemptr(real_param, result, "0");
+        return real_param;
+    }
+
+    return result;
+}
+
 
 int PrimaryExpAST::Get_value()
 {
