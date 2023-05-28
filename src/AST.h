@@ -82,9 +82,13 @@ public:
 class FuncFParamAST : public BaseAST
 {
 public:
+    enum TYPE { SINGLE, ARRAY };
+    TYPE tag;
     std::unique_ptr<BTypeAST> btype;
     std::string ident;
-    std::string Dump() const;
+    std::vector<std::unique_ptr<ConstExpAST>> const_exp_list;
+    std::string Dump();
+    void getIndex(std::vector<int> &len);
 };
 
 class FuncTypeAST : public BaseAST

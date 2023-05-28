@@ -350,11 +350,29 @@ FuncFParams
 FuncFParam
   : BType IDENT {
     auto ast = new FuncFParamAST();
+    ast->tag = FuncFParamAST::SINGLE;
     ast->btype = unique_ptr<BTypeAST>((BTypeAST *)$1);
     ast->ident = *unique_ptr<string>($2);
     $$ = ast;
+  } | BType IDENT '[' ']' {
+    auto ast = new FuncFParamAST();
+    ast->tag = FuncFParamAST::ARRAY;
+    ast->btype = unique_ptr<BTypeAST>((BTypeAST *)$1);
+    ast->ident = *unique_ptr<string>($2);
+    $$ = ast;
+  } | BType IDENT '[' ']' ArrayIndexList {
+    auto ast = new FuncFParamAST();
+    ast->tag = FuncFParamAST::ARRAY;
+    ast->btype = unique_ptr<BTypeAST>((BTypeAST *)$1);
+    ast->ident = *unique_ptr<string>($2);
+    std::unique_ptr<ArrayIndexListAST> ptr((ArrayIndexListAST*)$5);
+    for (auto &i : ptr->const_exp_list){
+      ast->const_exp_list.emplace_back(i.release());
+    }
+    $$ = ast;
   }
   ;
+
 // 同上, 不再解释
 /* FuncType
   : INT {

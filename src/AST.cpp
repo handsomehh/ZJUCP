@@ -34,6 +34,8 @@ bool ctrl;
 
 While_Stack while_stack;
 
+bool is_passing_func_paramters = false;
+
 void CompUnitAST::Dump()const {
     std::cout << "CompUnitAST { ";
     ks.func_decl();
@@ -530,10 +532,36 @@ void FuncDefAST::Dump() const
     {
         for (auto &i : params->params)
         {
-            if (i->btype->tag == BTypeAST::INT)
-            {
-                ks.appendaddtab(symbol_tb_stack.Get_ir_name(i->ident) + ks.alloc32i);
-                ks.appendaddtab("store %" + symbol_tb_stack.Get_ir_name(i->ident).substr(1) + "," + symbol_tb_stack.Get_ir_name(i->ident) + "\n");
+            if (i->tag == FuncFParamAST::SINGLE){
+                if (i->btype->tag == BTypeAST::INT)
+                {
+                    ks.appendaddtab(symbol_tb_stack.Get_ir_name(i->ident) + ks.alloc32i);
+                    ks.appendaddtab("store %" + symbol_tb_stack.Get_ir_name(i->ident).substr(1) + ", " + symbol_tb_stack.Get_ir_name(i->ident) + "\n");
+                }
+            }
+            else if (i->tag == FuncFParamAST::ARRAY){
+                // [NEED MODIFY]
+                // fun @f(%arr: *i32): i32 {
+                // %entry:
+                //     @arr = alloc *i32
+                //     store %arr, @arr
+                //     %0 = load @arr
+                //     %1 = getptr %0, 1
+                //     %2 = load %1
+                //     ret %2
+                // }
+                cout << "FuncFParamAST::ARRAY ";
+                vector<int> len;
+                vector<int> padding_len;
+                padding_len.push_back(-1);
+
+                i->getIndex(len);
+                for(int l : len) padding_len.push_back(l);
+                
+                std::string ir_name = symbol_tb_stack.Get_ir_name(i->ident);
+
+                ks.appendaddtab(ir_name +  " = alloc "  + "*" + ks.getArrType(len) + '\n');
+                ks.appendaddtab("store %" + symbol_tb_stack.Get_ir_name(i->ident).substr(1) + ", " + ir_name + "\n");
             }
         }
     }
@@ -548,6 +576,15 @@ void FuncDefAST::Dump() const
     ks.append("}\n\n");
     symbol_tb_stack.quit();
 }
+
+void FuncFParamAST::getIndex(std::vector<int> &len){
+    len.clear();
+    for(auto &ce: const_exp_list) {
+        len.push_back(ce->Get_value());
+    }
+    return;
+}
+
 void FuncFParamsAST::Dump() const
 {
 
@@ -562,23 +599,52 @@ void FuncFParamsAST::Dump() const
         }
         else
         {
-            ks.append("," + res);
+            ks.append(", " + res);
         }
     }
 }
-std::string FuncFParamAST::Dump() const
+
+std::string FuncFParamAST::Dump()
 {
-    if (btype->tag == BTypeAST::INT)
-    {
+    if (tag == FuncFParamAST::SINGLE){
+        if (btype->tag == BTypeAST::INT)
+        {
+            if (symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size())
+            {
+                cout << "Func parameters " << ident << " has been defined" << endl;
+                return "";
+            }
+            std::string ir_name = symbol_tb_stack.Get_var_name(ident);
+            std::string xingcan = "%" + ir_name.substr(1);
+            symbol_tb_stack.insert(ident, ir_name, SymbolTable::INT);
+            std::string res = xingcan + ": " + "i32";
+            return res;
+        }
+    }
+    else if (tag == FuncFParamAST::ARRAY){
         if (symbol_tb_stack.is_exist(ident) == symbol_tb_stack.size())
         {
             cout << "Func parameters " << ident << " has been defined" << endl;
             return "";
         }
+
         std::string ir_name = symbol_tb_stack.Get_var_name(ident);
         std::string xingcan = "%" + ir_name.substr(1);
-        symbol_tb_stack.insert(ident, ir_name, SymbolTable::INT);
-        std::string res = xingcan + ": " + "i32";
+
+        vector<int> len;
+        vector<int> padding_len;
+        padding_len.push_back(-1);
+
+        getIndex(len);
+        for(int l : len) padding_len.push_back(l);
+
+        symbol_tb_stack.insertArray(ident, ir_name, padding_len, SymbolTable::ARRAY, Symbol::PASSING);
+        std::string res = xingcan + ": " + "*"; // [NEED TO FILL]
+        std::string type = "i32";
+        for(auto &ce: const_exp_list){
+            type = "[" + type + ", " + to_string(ce->Get_value()) + "]";
+        }
+        res = res + type;
         return res;
     }
     cout << "no supported parameter function" << endl;
@@ -1133,6 +1199,8 @@ std::string UnaryExpAST::Dump() const
     }
     else if (tag == UnaryExpAST::FUN)
     {
+        is_passing_func_paramters = true;
+
         if (symbol_tb_stack.Get_fun_type(ident) == FunctionTable::INT)
         {
             std::string para = "";
@@ -1154,6 +1222,8 @@ std::string UnaryExpAST::Dump() const
             ks.appendaddtab("call @" + ident + "(" + para + ")\n");
             return "";
         }
+
+        is_passing_func_paramters = false;
     }
 }
 
@@ -1170,7 +1240,7 @@ std::string FuncRParamsAST::Dump() const
         }
         else
         {
-            res += "," + i->Dump();
+            res += ", " + i->Dump();
         }
     }
     return res;
@@ -1203,9 +1273,33 @@ std::string PrimaryExpAST::Dump() const
         }
         else if (symbol_tb_stack.Get_type(lval->ident) == Symbol::CONST_ARRAY ||
                  symbol_tb_stack.Get_type(lval->ident) == Symbol::ARRAY){
+            std::cout << "IS ARRAY!!!!!!!!!!!!!" << endl;
+            
+            // 一般来说，访问数组的时候会带下标，例如 int b = a[5];
+            // 如果说，数组没有下标，通常是在函数调用中，直接传递整个数组，例如 int b = f(a)，此时就会有 lval->exp_list.size() == 0
+            if (lval->exp_list.size() == 0){
+                std::string tmp = symbol_tb_stack.Get_count();
+                if (symbol_tb_stack.Get_array_source(lval->ident) == Symbol::DEF) {
+                    ks.appendaddtab(tmp + " = " + "getelemptr " + symbol_tb_stack.Get_ir_name(lval->ident) + ", " + "0" + '\n');
+                }
+                else if (symbol_tb_stack.Get_array_source(lval->ident) == Symbol::PASSING) {
+                    ks.appendaddtab(tmp + " = " + "load " + symbol_tb_stack.Get_ir_name(lval->ident) + '\n');
+                }
+                return tmp;
+            }
+
+            // 如果数组带下标，在DumpLval处理
             std::string tmp = DumpLval();
+
+            std:vector<int> arr_size;
+            symbol_tb_stack.Get_array_size(lval->ident, arr_size);
+            if (is_passing_func_paramters && (lval->exp_list.size() != arr_size.size())){
+                return tmp;
+            }
+
             string tmp2 = symbol_tb_stack.Get_count();
             ks.appendaddtab(tmp2 + " = load " + tmp + '\n');
+                
             return tmp2;
         }
     }

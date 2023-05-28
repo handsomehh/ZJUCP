@@ -56,11 +56,11 @@ public:
         {
             // 如果当前label是第一次出现，则将它加入map中
             map.insert(std::make_pair(name, 1));
-            return '@' + name + "1";
+            return '@' + name + "_1";
         }
         else
         {
-            return '@' + name + std::to_string(++it->second);
+            return '@' + name + "_" + std::to_string(++it->second);
         }
     }
 
@@ -115,6 +115,14 @@ public:
     std::string ir_name;                  // 表示该symbol在IR中的名称，例如变量a，在IR中的名称可以是@a1, @a2...
     std::variant<IntVar, ConstInt> value; // 表示该symbol的值, 不过主要是const有用， variables的值还是要运行时确定
     std::vector<int> arr_size;   // 当symbol表示的对象为数组时，arr_size表示数组的维度信息
+    
+    enum ARR_SOURCE{
+        DEF,
+        PASSING,
+        NOT_EXIST
+    };
+    ARR_SOURCE source;
+
     enum TYPE
     {
         INT,
@@ -143,13 +151,14 @@ public:
     }
 
     // 数组的symbol构造函数
-    Symbol(std::string ir_name_, const std::vector<int> &arr_size_, TYPE tag_)
+    Symbol(std::string ir_name_, const std::vector<int> &arr_size_, TYPE tag_, ARR_SOURCE source_)
     {
         ir_name = ir_name_;
         tag = tag_;
         for (auto i : arr_size_){
             arr_size.push_back(i);
         }
+        source = source_;
     }
 
     void Print()
@@ -183,6 +192,7 @@ public:
         CONST_ARRAY,
         ARRAY
     };
+
     /*fun*/
     int insert(const std::string &name, const std::string &ir_name, int value, TYPE mode)
     {
@@ -205,7 +215,7 @@ public:
         }
         else
         {
-            std::cout << "error input mode\n";
+            std::cout << "error input mode1\n";
             return 0;
         }
     }
@@ -230,13 +240,13 @@ public:
         }
         else
         {
-            std::cout << "error input mode\n";
+            std::cout << "error input mode2\n";
             return 0;
         }
     }
 
     // 向symbol table中插入一个数组symbol
-    int insertArray(const std::string &name, const std::string &ir_name, const std::vector<int> &arr_size, TYPE mode)
+    int insertArray(const std::string &name, const std::string &ir_name, const std::vector<int> &arr_size, TYPE mode, Symbol::ARR_SOURCE source = Symbol::DEF)
     {
         if (is_exist(name))
         {
@@ -244,17 +254,17 @@ public:
             return 0;
         }
         else if (mode == CONST_ARRAY){
-            Symbol *symbol = new Symbol(ir_name, arr_size, Symbol::CONST_ARRAY);
+            Symbol *symbol = new Symbol(ir_name, arr_size, Symbol::CONST_ARRAY, source);
             map.insert({name, symbol});
             return 1;
         }
         else if (mode == ARRAY){
-            Symbol *symbol = new Symbol(ir_name, arr_size, Symbol::ARRAY);
+            Symbol *symbol = new Symbol(ir_name, arr_size, Symbol::ARRAY, source);
             map.insert({name, symbol});
             return 1;
         }
         else {
-            std::cout << "error input mode\n";
+            std::cout << "error input mode3\n";
             return 0;
         }
     }
@@ -326,6 +336,17 @@ public:
         for (auto i: res->second->arr_size){
             arr_size.push_back(i);
         }
+    }
+
+
+    // 查看当前最近作用域的name数组是定义的还是传递参数进来的
+    Symbol::ARR_SOURCE Get_array_source(const std::string &name){
+        if (!is_exist(name))
+        {
+            return Symbol::NOT_EXIST;
+        }
+        auto res = map.find(name);
+        return res->second->source;
     }
 
     // 查找symbol table中变量name的IR名称并返回
@@ -460,8 +481,8 @@ public:
     }
 
     // 向符号表栈（最顶端的符号表）插入一个数组symbol
-    int insertArray(const std::string &name, const std::string &ir_name, const std::vector<int> &arr_size, SymbolTable::TYPE mode){
-        return symbol_table_stack.back()->insertArray(name, ir_name, arr_size, mode);
+    int insertArray(const std::string &name, const std::string &ir_name, const std::vector<int> &arr_size, SymbolTable::TYPE mode, Symbol::ARR_SOURCE source = Symbol::DEF){
+        return symbol_table_stack.back()->insertArray(name, ir_name, arr_size, mode, source);
     }
 
 
@@ -543,6 +564,33 @@ public:
             const auto &tb = *rit;
             Symbol::TYPE x = tb->Get_type(name);
             if (x != Symbol::UNKNOWN)
+            {
+                is_exist = true;
+                val = x;
+                break;
+            }
+        }
+
+        if (is_exist)
+        {
+            return val;
+        }
+        else
+        {
+            std::cout << "not found :" << name << std::endl;
+            return val;
+        }
+    }
+
+    //查看符号表栈中某个数组是在当前函数中定义的，还是从参数列表中传递进来的
+    Symbol::ARR_SOURCE Get_array_source(const std::string &name){
+        bool is_exist = false;
+        Symbol::ARR_SOURCE val = Symbol::DEF;
+        for (auto rit = symbol_table_stack.rbegin(); rit != symbol_table_stack.rend(); ++rit)
+        {
+            const auto &tb = *rit;
+            Symbol::ARR_SOURCE x = tb->Get_array_source(name);
+            if (x != Symbol::NOT_EXIST)
             {
                 is_exist = true;
                 val = x;
