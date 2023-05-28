@@ -12,9 +12,9 @@ class StackAddressAllocator { // 分配栈上的局部变量的地址
 public:
     // 存储变量地址的哈希映射表
     std::unordered_map<koopa_raw_value_t, size_t> var_addr;
-    // R: 函数中有call则为4，用于保存ra寄存器
-    // A: 该函数调用的函数中，参数最多的那个，需要额外分配的第9,10……个参数的空间
-    // S: 为这个函数的局部变量分配的栈空间
+    // ReturnAddress: 函数中有call则为4，用于保存ra寄存器
+    // AllocatedPara: 该函数调用的函数中，参数最多的那个，需要额外分配的第9,10……个参数的空间
+    // StackSpace: 为这个函数的局部变量分配的栈空间
     // delta: 对齐后的栈帧长度
     size_t ReturnAddress;
     size_t AllocatedPara;
