@@ -1,53 +1,3 @@
-<div class="cover" style="page-break-after:always;font-family:方正公文仿宋;width:100%;height:100%;border:none;margin: 0 auto;text-align:center;">
-    <div style="width:60%;margin: 0 auto;height:0;padding-bottom:10%;">
-        </br>
-        <img src="./pic/校名-黑色.svg" alt="校名" style="width:100%;"/>
-    </div>
-    </br></br></br></br></br>
-    <div style="width:60%;margin: 0 auto;height:0;padding-bottom:40%;">
-        <img src="./pic/校徽-黑色.svg" alt="校徽" style="width:100%;"/>
-	</div>
-    </br></br></br></br></br></br></br></br>
-    <span style="font-family:华文黑体Bold;text-align:center;font-size:20pt;margin: 10pt auto;line-height:30pt;">编译原理</span>
-    <p style="text-align:center;font-size:14pt;margin: 0 auto">课程实验报告 </p>
-    </br>
-    </br>
-    <table style="border:none;text-align:center;width:72%;font-family:仿宋;font-size:14px; margin: 0 auto;">
-    <tbody style="font-family:方正公文仿宋;font-size:12pt;">
-        <tr style="font-weight:normal;"> 
-    		<td style="width:20%;text-align:right;">题　　目</td>
-    		<td style="width:2%">：</td> 
-    		<td style="width:40%;font-weight:normal;border-bottom: 1px solid;text-align:center;font-family:华文仿宋"> 编译原理project</td>     </tr>
-    	<tr style="font-weight:normal;"> 
-    		<td style="width:20%;text-align:right;">授课教师</td>
-    		<td style="width:2%">：</td> 
-    		<td style="width:40%;font-weight:normal;border-bottom: 1px solid;text-align:center;font-family:华文仿宋">李莹 </td>     </tr>
-    	<tr style="font-weight:normal;"> 
-    		<td style="width:20%;text-align:right;">小组成员1</td>
-    		<td style="width:%">：</td> 
-    		<td style="width:40%;font-weight:normal;border-bottom: 1px solid;text-align:center;font-family:华文仿宋"> 潘韬-3200105354</td>     </tr>
-    	<tr style="font-weight:normal;"> 
-    		<td style="width:20%;text-align:right;">小组成员2</td>
-    		<td style="width:%">：</td> 
-    		<td style="width:40%;font-weight:normal;border-bottom: 1px solid;text-align:center;font-family:华文仿宋"> 周轶潇-3200103645</td>     </tr>
-        <tr style="font-weight:normal;"> 
-    		<td style="width:20%;text-align:right;">小组成员3</td>
-    		<td style="width:%">：</td> 
-    		<td style="width:40%;font-weight:normal;border-bottom: 1px solid;text-align:center;font-family:华文仿宋"> 韩恺荣-3200105385</td>     </tr>
-    	<tr style="font-weight:normal;"> 
-    		<td style="width:20%;text-align:right;">日　　期</td>
-    		<td style="width:2%">：</td> 
-    		<td style="width:40%;font-weight:normal;border-bottom: 1px solid;text-align:center;font-family:华文仿宋">2023/05/27</td>     </tr>
-    </tbody>              
-    </table>
-</div>
-
-
-
-
-
-<!-- 注释语句：导出PDF时会在这里分页 -->
-
 # 一、编译器概述
 
 我们实现了一个可以将 SysY 语言编译到 RISC-V 汇编的编译器。SysY 语言是C语言的子集，而编译器将生成`RV32IM`范围内的 RISC-V 汇编。该编译器使用的中间表示是 Koopa IR，它先将 SysY 源程序翻译成 Koopa IR，再将 Koopa IR 翻译成 RISC-V 汇编。
@@ -133,7 +83,6 @@ docker run -it --rm -v 项目目录:/root/compiler maxxing/compiler-dev make -C 
 5. 重复步骤2-4，直到扫描完整个输入源代码。
 6. 词法分析器将生成的词法单元
 
-
 ## 2.2 语法分析模块
 
 语法分析模块负责将token流分析为一棵抽象语法树。它能确定一个SysY源程序的语法结构，能够检测出SysY源程序中的语法错误。 语法分析模块从词法分析模块获得token流，并验证这个token流是否可以由文法生成。语法分析模块会构造一棵语法分析树，并把它传递给编译器的其他部分进一步处理，在构建语法分析树的过程中，就验证了这个token流是否符合文法。
@@ -169,19 +118,19 @@ docker run -it --rm -v 项目目录:/root/compiler maxxing/compiler-dev make -C 
 
 - ConstDef
 
-  `ConstDef` 表示常量定义，由标识符（`IDENT`）和一个常量初始化值 `ConstInitVal` 组成。
+  `ConstDef` 表示常量定义，分成常量和常量数组两种情况。当定义常量时，由标识符（`IDENT`）和一个常量初始化值 `ConstInitVal` 组成；当定义常量数组时，由由标识符（`IDENT`）、数组长度（`ConstExp`）和一组常量初始化值 `ConstInitVal` 组成。
 
 - ConstInitVal
 
-  `ConstInitVal` 表示常量的初始值，它是一个常量表达式 `ConstExp`。
+  `ConstInitVal` 表示常量的初始值，在定义普通常量变量时，它是一个常量表达式 `ConstExp`；在定义常量数组时，它是一个vector，表示一组常量表达式。
 
 - VarDef
 
-  `VarDef` 表示变量定义，可以是标识符（`IDENT`）或标识符加初始化值（`IDENT '=' InitVal`）。
+  `VarDef` 表示变量定义，同样包含定义变量和定义数组两种情况。当定义变量时，可以是标识符（`IDENT`）或标识符加初始化值（`IDENT '=' InitVal`）；当定义数组时，可以不包含初始值（`IDENT "[" ConstExp "]"`），也可以包含初始值（ IDENT "[" ConstExp "]" "=" InitVal）。
 
 - InitVal
 
-  `InitVal` 表示变量的初始值，它是一个表达式 `Exp`。
+  `InitVal` 表示变量的初始值，当定义普通变量时，它是一个表达式 `Exp`；在顶定义数组时，它是一个表达式的vector，表示一组初始值。
 
 - FuncDef
 
@@ -201,15 +150,20 @@ docker run -it --rm -v 项目目录:/root/compiler maxxing/compiler-dev make -C 
   - 表达式语句（`Exp SEMI`）表示单独的表达式语句。
   - 代码块（`Block`）表示一个代码块。
   - 返回语句（`RETURN Exp SEMI`）表示函数的返回语句。
+  - if语句（`"if" "(" Exp ")" Stmt ["else" Stmt]`）表示一个IF（ELSE）条件分支语句。
+  - while语句（`"while" "(" Exp ")" Stmt`）表示一个循环语句
+  - continue
+  - break
 
 - Exp
 
-  `Exp` 表示表达式，可以是变量、常量、函数调用、运算表达式等。
+  `Exp` 表示表达式，可以是变量、常量、函数调用、运算表达式、数组标识等。
 
   - 变量（`IDENT`）表示一个变量。
   - 常量（`ICONST`）表示一个整数常量。
   - 函数调用（`IDENT '(' Args ')'`）表示调用一个函数，其中 `Args` 是参数列表。
   - 运算表达式（例如加法、减法等）由操作符和两个操作数组成。
+  - 数组（`IDENT "[" Exp "]"`）表示数组中的某个元素
 
 #### （3）运算模块
 
@@ -292,48 +246,50 @@ docker run -it --rm -v 项目目录:/root/compiler maxxing/compiler-dev make -C 
 
 ### 2.2.3 语法范式描述
 
-	CompUnit      ::= [CompUnit] (Decl | FuncDef);
-	
-	Decl          ::= ConstDecl | VarDecl;
-	ConstDecl     ::= "const" BType ConstDef {"," ConstDef} ";";
-	BType         ::= "int";
-	ConstDef      ::= IDENT {"[" ConstExp "]"} "=" ConstInitVal;
-	ConstInitVal  ::= ConstExp | "{" [ConstInitVal {"," ConstInitVal}] "}";
-	VarDecl       ::= BType VarDef {"," VarDef} ";";
-	VarDef        ::= IDENT {"[" ConstExp "]"}
-					| IDENT {"[" ConstExp "]"} "=" InitVal;
-	InitVal       ::= Exp | "{" [InitVal {"," InitVal}] "}";
-	
-	FuncDef       ::= FuncType IDENT "(" [FuncFParams] ")" Block;
-	FuncType      ::= "void" | "int";
-	FuncFParams   ::= FuncFParam {"," FuncFParam};
-	FuncFParam    ::= BType IDENT ["[" "]" {"[" ConstExp "]"}];
-	
-	Block         ::= "{" {BlockItem} "}";
-	BlockItem     ::= Decl | Stmt;
-	Stmt          ::= LVal "=" Exp ";"
-					| [Exp] ";"
-					| Block
-					| "if" "(" Exp ")" Stmt ["else" Stmt]
-					| "while" "(" Exp ")" Stmt
-					| "break" ";"
-					| "continue" ";"
-					| "return" [Exp] ";";
-	
-	Exp           ::= LOrExp;
-	LVal          ::= IDENT {"[" Exp "]"};
-	PrimaryExp    ::= "(" Exp ")" | LVal | Number;
-	Number        ::= INT_CONST;
-	UnaryExp      ::= PrimaryExp | IDENT "(" [FuncRParams] ")" | UnaryOp UnaryExp;
-	UnaryOp       ::= "+" | "-" | "!";
-	FuncRParams   ::= Exp {"," Exp};
-	MulExp        ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
-	AddExp        ::= MulExp | AddExp ("+" | "-") MulExp;
-	RelExp        ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
-	EqExp         ::= RelExp | EqExp ("==" | "!=") RelExp;
-	LAndExp       ::= EqExp | LAndExp "&&" EqExp;
-	LOrExp        ::= LAndExp | LOrExp "||" LAndExp;
-	ConstExp      ::= Exp;
+```
+CompUnit      ::= [CompUnit] (Decl | FuncDef);
+
+Decl          ::= ConstDecl | VarDecl;
+ConstDecl     ::= "const" BType ConstDef {"," ConstDef} ";";
+BType         ::= "int";
+ConstDef      ::= IDENT {"[" ConstExp "]"} "=" ConstInitVal;
+ConstInitVal  ::= ConstExp | "{" [ConstInitVal {"," ConstInitVal}] "}";
+VarDecl       ::= BType VarDef {"," VarDef} ";";
+VarDef        ::= IDENT {"[" ConstExp "]"}
+                | IDENT {"[" ConstExp "]"} "=" InitVal;
+InitVal       ::= Exp | "{" [InitVal {"," InitVal}] "}";
+
+FuncDef       ::= FuncType IDENT "(" [FuncFParams] ")" Block;
+FuncType      ::= "void" | "int";
+FuncFParams   ::= FuncFParam {"," FuncFParam};
+FuncFParam    ::= BType IDENT ["[" "]" {"[" ConstExp "]"}];
+
+Block         ::= "{" {BlockItem} "}";
+BlockItem     ::= Decl | Stmt;
+Stmt          ::= LVal "=" Exp ";"
+                | [Exp] ";"
+                | Block
+                | "if" "(" Exp ")" Stmt ["else" Stmt]
+                | "while" "(" Exp ")" Stmt
+                | "break" ";"
+                | "continue" ";"
+                | "return" [Exp] ";";
+
+Exp           ::= LOrExp;
+LVal          ::= IDENT {"[" Exp "]"};
+PrimaryExp    ::= "(" Exp ")" | LVal | Number;
+Number        ::= INT_CONST;
+UnaryExp      ::= PrimaryExp | IDENT "(" [FuncRParams] ")" | UnaryOp UnaryExp;
+UnaryOp       ::= "+" | "-" | "!";
+FuncRParams   ::= Exp {"," Exp};
+MulExp        ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
+AddExp        ::= MulExp | AddExp ("+" | "-") MulExp;
+RelExp        ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
+EqExp         ::= RelExp | EqExp ("==" | "!=") RelExp;
+LAndExp       ::= EqExp | LAndExp "&&" EqExp;
+LOrExp        ::= LAndExp | LOrExp "||" LAndExp;
+ConstExp      ::= Exp;
+```
 
 
 ## 2.3 IR生成模块
@@ -404,7 +360,9 @@ std::vector<std::unique_ptr<AST子类>> 变量名2;
 
 std::unique_ptr< AST子类 >是再yacc中生成AST时，对应类型的结点可能指向的其他类型结点的类型枚举，而std::vector< std::unique_ptr< AST子类 >>则是对于EBNF文法中可重复模块的保存，如：
 
-	Block         ::= "{" {BlockItem} "}";
+```
+Block ::= "{" {BlockItem} "}";
+```
 
 3. 函数包含:
 
@@ -424,37 +382,34 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `func_defs`：包含指向 `FuncDefAST` 的智能指针的向量，表示函数定义列表
   - `decls`：包含指向 `DeclAST` 的智能指针的向量，表示声明列表
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `FuncDefAST` 类继承自 `BaseAST`，表示函数定义的抽象语法树节点。它包含以下成员：
   - `params`：指向 `FuncFParamsAST` 的智能指针，表示函数参数列表
   - `func_type`：指向 `BTypeAST` 的智能指针，表示函数返回类型
   - `ident`：函数的标识符
   - `block`：指向 `BlockAST` 的智能指针，表示函数体
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `FuncFParamsAST` 类继承自 `BaseAST`，表示函数形参列表的抽象语法树节点。它包含以下成员：
   - `params`：包含指向 `FuncFParamAST` 的智能指针的向量，表示形参列表
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `FuncFParamAST` 类继承自 `BaseAST`，表示函数形参的抽象语法树节点。它包含以下成员：
+
+  - `tag`：标记是否为数组
   - `btype`：指向 `BTypeAST` 的智能指针，表示形参的类型
   - `ident`：形参的标识符
+  - `const_exp_list`：数组的情况，表示数组下标
   - `Dump()`：用于将节点信息转储为字符串的方法
 
 - `FuncTypeAST` 类继承自 `BaseAST`，表示函数类型的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示函数类型的标签（INT 或 VOID）
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `BlockAST` 类继承自 `BaseAST`，表示代码块的抽象语法树节点。它包含以下成员：
   - `blockitem`：包含指向 `BlockItemAST` 的智能指针的向量，表示代码块的语句或声明列表
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `BlockItemAST` 类继承自 `BaseAST`，表示代码块中的语句或声明的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（DECL 或 STMT）
   - `decl`：指向 `DeclAST` 的智能指针，表示声明
   - `stmt`：指向 `StmtAST` 的智能指针，表示语句
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `StmtAST` 类继承自 `BaseAST`，表示语句的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示语句的类型（RETURN、ASSIGN、EXP、BLOCK、IF 或 WHILE）
   - `exp`：指向 `ExpAST` 的智能指针，表示表达式
@@ -464,12 +419,10 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `else_stmt`：指向 `StmtAST` 的智能指针，表示 else 语句
   - `while_stmt`：指向 `StmtAST` 的智能指针，表示 while 语句
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `ExpAST` 类继承自 `BaseAST`，表示表达式的抽象语法树节点。它包含以下成员：
   - `l_or_exp`：指向 `LOrExpAST` 的智能指针，表示逻辑或表达式
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取表达式的值的方法
-
 - `LOrExpAST` 类继承自 `BaseAST`，表示逻辑或表达式的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（AND 或 OR_AND）
   - `l_and_exp`：指向 `LAndExpAST` 的智能指针，表示逻辑与表达式
@@ -477,7 +430,6 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `l_and_exp2`：指向 `LAndExpAST` 的智能指针，表示逻辑与表达式
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取逻辑或表达式的值的方法
-
 - `LAndExpAST` 类继承自 `BaseAST`，表示逻辑与表达式的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（EQ 或 EQ_AND）
   - `eq_exp`：指向 `EqExpAST` 的智能指针，表示相等表达式
@@ -485,7 +437,6 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `eq_exp2`：指向 `EqExpAST` 的智能指针，表示相等表达式
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取逻辑与表达式的值的方法
-
 - `EqExpAST` 类继承自 `BaseAST`，表示相等表达式的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（REL 或 EQ_REL）
   - `rel_exp`：指向 `RelExpAST` 的智能指针，表示关系表达式
@@ -494,7 +445,6 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `op`：表示相等操作符（如"=="、"!="等）
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取相等表达式的值的方法
-
 - `RelExpAST` 类继承自 `BaseAST`，表示关系表达式的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（ADD 或 REL_ADD）
   - `add_exp`：指向 `AddExpAST` 的智能指针，表示加法表达式
@@ -503,7 +453,6 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `op`：表示关系操作符（如"<"、">"、"<="、">="等）
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取关系表达式的值的方法
-
 - `AddExpAST` 类继承自 `BaseAST`，表示加法表达式的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（MUL 或 ADD_MUL）
   - `mul_exp`：指向 `MulExpAST` 的智能指针，表示乘法表达式
@@ -512,7 +461,6 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `op`：表示加法操作符（如"+"、"-"等）
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取加法表达式的值的方法
-
 - `MulExpAST` 类继承自 `BaseAST`，表示乘法表达式的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（UNARY 或 MUL_UNARY）
   - `unary_exp`：指向 `UnaryExpAST` 的智能指针，表示一元表达式
@@ -521,49 +469,58 @@ Get_value则是Exp的衍生类中特有的方法，用与直接得到一个表�
   - `op`：表示乘法操作符（如"*"、"/"、"%"等）
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取乘法表达式的值的方法
-
 - `UnaryExpAST` 类继承自 `BaseAST`，表示一元表达式的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示节点的类型（FACTOR 或 UNARY_FACTOR）
   - `factor`：指向 `FactorAST` 的智能指针，表示因子
   - `op`：表示一元操作符（如"-"、"!"等）
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Get_value()`：用于获取一元表达式的值的方法
-
 - `DeclAST` 类继承自 `BaseAST`，表示声明的抽象语法树节点。它包含以下成员：
   - `btype`：指向 `BTypeAST` 的智能指针，表示声明的类型
   - `ident`：标识符
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `BTypeAST` 类继承自 `BaseAST`，表示基本类型的抽象语法树节点。它包含以下成员：
   - `tag`：枚举类型，表示类型的标签（INT、FLOAT 或 CHAR）
   - `Dump()`：用于将节点信息转储为字符串的方法
-
 - `ConstDefAST` 类继承自 `BaseAST`，表示常量定义的抽象语法树节点。它包含以下成员：
+
+  - `tag`：记录是否为数组
   - `ident`：常量的标识符
+  - `const_exp_list`：如果是数组，记录数组的长度
   - `const_init_val`：指向 `ConstInitValAST` 的智能指针，表示常量的初始值
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Dump_Global()`：用于将全局节点信息转储为字符串的方法
+
 - `VarDefAST` 类继承自 `BaseAST`，表示变量定义的抽象语法树节点。它包含以下成员：
+
+  - `tag`：标记是否为数组
   - `ident`：变量的标识符
+  - `const_exp_list`：如果是数组，记录数组长度
   - `init_val`：指向 `InitValAST` 的智能指针，表示变量的初始值
   - `Dump()`：用于将节点信息转储为字符串的方法
   - `Dump_Global()`：用于将全局节点信息转储为字符串的方法
 
 - `InitValAST` 类继承自 `BaseAST`，表示初始化值的抽象语法树节点。它包含以下成员：
-  - `exp`：指向 `ExpAST` 的智能指针，表示初始化表达式
+
+  - `tag`：记录是否为数组
+  - `exp`：指向 `ExpAST` 的智能指针，用于初始化普通变量的情况，表示初始化表达式
+  - `exp_list`：`exp`的vector，用于初始化数组的情况
   - `Get_value()`：用于获取初始化值的方法
 
 - `ConstInitValAST` 类继承自 `BaseAST`，表示常量的初始化值的抽象语法树节点。它包含以下成员：
-  - `const_exp`：指向 `ConstExpAST` 的智能指针，表示常量的初始化表达式
+
+  - `tag`：记录是否为数组
+  - `const_exp`：指向 `ConstExpAST` 的智能指针，用于初始化普通常量的情况，表示常量的初始化表达式
+  - `exp_list`：`exp`的vector，用于初始化数组的情况
   - `Dump()`：用于将节点信息转储为字符串的方法
 
 - `LValAST` 类继承自 `BaseAST`，表示左值（变量或常量）的抽象语法树节点。它包含以下成员：
   - `ident`：左值的标识符
-
+  - `tag`：表示是数组还是普通变量
+  - `exp_list`：对于数组的情况，记录数组下标
 - `ConstExpAST` 类继承自 `BaseAST`，表示常量表达式的抽象语法树节点。它包含以下成员：
   - `exp`：指向 `ExpAST` 的智能指针，表示常量表达式
   - `Get_value()`：用于获取常量表达式的值的方法
-
 - `FuncRParamsAST` 类继承自 `BaseAST`，表示函数调用的实参列表的抽象语法树节点。它包含以下成员：
   - `exps`：包含指向 `ExpAST` 的智能指针的向量，表示实参列表
   - `Dump()`：用于将节点信息转储为字符串的方法
@@ -769,7 +726,7 @@ void Visit(const koopa_raw_get_ptr_t& get_ptr);			  // 访问GetPtr指令
 
 它们之间配合的大体的实现框架如下图所示：
 
-<img src=".\pic\Visit结构.png" alt="Visit结构" style="zoom:38%;" />
+<img src="F:\潇某人\course\编译原理\compiler\报告\cp报告文档\pic\Visit结构.png" alt="Visit结构" style="zoom:38%;" />
 
 在每一次访问到最底层的指令后，我们就将相应的`RISC-V`汇编追加写入到全局变量`RiscvString`中。当我们将`program tree`遍历完成时，汇编代码的编写也完成了。
 
@@ -783,7 +740,7 @@ void Visit(const koopa_raw_get_ptr_t& get_ptr);			  // 访问GetPtr指令
 
 `SymbolTable` 类用于表示一个符号表，其中的 `map` 成员变量是一个无序哈希映射，用于存储变量名和对应的 `Symbol` 对象。`Symbol` 对象包含变量在IR中的名称、变量的值以及变量的类型。
 
-`SymbolTable` 类提供了以下功能：
+`SymbolTable` 类提供功能示例：
 
 - `insert` 函数：用于向符号表中插入一个变量。该函数接受变量名、IR名称、初始值和变量类型作为参数，并将变量插入到哈希表中。
 - `is_exist` 函数：用于判断一个变量是否存在于符号表中。
@@ -795,7 +752,7 @@ void Visit(const koopa_raw_get_ptr_t& get_ptr);			  // 访问GetPtr指令
 
 `FunctionTable` 类用于表示函数表，其中的 `map` 成员变量是一个无序哈希映射，用于存储函数名和对应的函数类型。函数类型可以是整型或无返回值类型。
 
-`FunctionTable` 类提供了以下功能：
+`FunctionTable` 类提供功能示例：
 
 - `insert` 函数：用于向函数表中插入一个函数。该函数接受函数名和函数类型作为参数，并将函数插入到哈希表中。
 - `is_exist` 函数：用于判断一个函数是否存在于函数表中。
@@ -805,12 +762,36 @@ void Visit(const koopa_raw_get_ptr_t& get_ptr);			  // 访问GetPtr指令
 
 `SymbolTableStack` 类用于表示符号表的栈，它是由多个 `SymbolTable` 对象组成的。符号表栈可以用于管理不同作用域中的变量和函数。每当进入一个新的作用域时，都会创建一个新的符号表，并将其添加到符号表栈的顶部；当退出一个作用域时，会将该符号表从符号表栈中移除。
 
-`SymbolTableStack` 类提供了以下功能：
+`SymbolTableStack` 类提供功能示例：
 
 - `alloc` 函数：用于在符号表栈中分配一个新的符号表，即进入一个新的作用域。
 - `quit` 函数：用于退出当前作用域，即将符号表栈顶部的符号表弹出。
 - `is_exist` 函数：用于判断一个变量是否存在于符号表栈中的任何一个符号表中。
 - `is_exist_global` 函数：用于判断一个变量是否存在于全局符号表中。
+
+### 2.5.1.4 生成IR过程的编号系统
+
+1. **`Counter`**
+
+临时变量名称计数器，该计数器生成的是那些，没有在代码中显式存在，用来存储临时变量的寄存器的名称。
+
+例如有sysy代码 if (a == 9) ...
+
+其对应的中间表达为 %1 = eq 9, 9  br %1, %then1, %end1
+
+ 这里的的%1就是该部分生成的
+
+2. **`VarCounter`**
+
+VarCounter的作用是生成一个variable在Koopa IR中的名称
+
+例如，变量a在不同作用域中出现，那么它在IR中的名称分别是@a1,@a2...
+
+3. **`LabelCounter`**
+
+LabelCounter的作用是生成一个Label在Koopa IR中的名称
+
+比方说，在if-else语句里面，可能会有多个if嵌套的情况，那么我们就要依次生成 %then1 %then2 ... 表示不同的跳转Label
 
 # 三、编译器测试
 
@@ -842,10 +823,76 @@ qemu-riscv32-static hello
 ```
 
 目前，我们通过了前两个测试，截图如下：
-<img src=".\pic\2.png" alt="校名" style="width:100%;"/>
-<img src=".\pic\1.png" alt="校名" style="width:100%;"/>
+<img src="F:\潇某人\course\编译原理\compiler\报告\cp报告文档\pic\2.png" alt="校名" style="width:100%;"/>
+<img src="F:\潇某人\course\编译原理\compiler\报告\cp报告文档\pic\1.png" alt="校名" style="width:100%;"/>
 
-# 四、参考文献
+# 四、git工作流
+
+> git log中，用户名代表的成员分别是：
+>
+> handsomehh——韩恺荣
+>
+> newera-xiao——周轶潇
+>
+> unknownzjuer——潘韬
+
+719333d,unknownzjuer,2023-05-28 21:27:53 +0800,backend v2.0 finished
+
+d04f6a4,newera-xiao,2023-05-28 20:51:23 +0800,lv9 v2
+
+c394b2c,newera-xiao,2023-05-27 11:59:04 +0800,Merge remote-tracking branch 'origin/master'
+
+01b1036,newera-xiao,2023-05-27 11:55:41 +0800,lv9 v1
+
+a7b7a50,newera-xiao,2023-05-26 17:22:05 +0800,lv9 中间版
+
+0beb5fa,newera-xiao,2023-05-26 14:43:55 +0800,中间版
+
+8e5248a,unknownzjuer,2023-05-25 20:40:02 +0800,backend v1.0 finished
+
+e696d62,newera-xiao,2023-05-25 16:48:38 +0800,lv7 & lv8 finish
+
+9a84f1a,newera-xiao,2023-05-25 16:34:35 +0800,Merge remote-tracking branch 'origin/master'
+
+39a1ea4,newera-xiao,2023-05-25 15:41:38 +0800,lv7 finish
+
+9ee6bf9,handsomehh,2023-05-25 11:25:34 +0800,lv8 finish
+
+0287bb7,newera-xiao,2023-05-24 14:59:01 +0800,lv7（没加break和continue）
+
+> 另外，发现并修改了类似于int a = b + 1 中b直接去符号表取值的问题
+
+d1d993f,newera-xiao,2023-05-24 11:53:30 +0800,lv7（未完成）
+
+> 需要修复的漏洞：形如 a = a + 1 的运算表达式，以前对于表达式右边的a，我们直接调用Get_value()获取符号表的值，这是一种在编译时求值的思想；实际上我们需要在运行时求值，因此还是需要采用load表达式。
+
+ba54aac,newera-xiao,2023-05-23 23:33:40 +0800,lv6 finish
+
+> 修复了lv6中的bug
+>
+> 修复了之前忽视koopa load指令，选择直接从symbol table中取值所带来的问题。
+
+a5e6de8,newera-xiao,2023-05-23 14:17:44 +0800,lv6 still some bug
+
+> 该版本目前还有bug，不能通过所有测试，不过基本盘应该没什么问题了。相比于以往版本
+>
+> 1. systable.h进行了较多内容增添。主要是完善了变量、label等在IR中的命名机制，修复了lv5中的一些遗留的bug。
+>
+> 2. AST.cpp增加了关于if-else的实现
+
+6c1c44d,newera-xiao,2023-05-22 17:53:40 +0800,lv5 finish
+
+78e16c1,handsomehh,2023-05-19 15:47:57 +0800,lv4 debug finish
+
+2a92372,handsomehh,2023-05-18 23:04:36 +0800,lv4 with bugs
+
+198a25e,handsomehh,2023-05-17 20:07:20 +0800,lv3 koopaIR finish
+
+5450c19,handsomehh,2023-05-16 21:40:25 +0800,lv2 finish
+
+a848dca,handsomehh,2023-05-16 15:50:07 +0800,lv1 finish
+
+# 五、参考文献
 
 1. 北大编译实践在线文档：https://pku-minic.github.io/online-doc/#/
 
